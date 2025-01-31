@@ -15,46 +15,12 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
-  const checkExistingUser = async (email: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false, // This ensures we only check for existing users
-        }
-      })
-      
-      // If no error, user exists
-      if (!error) {
-        throw new Error('An account with this email already exists. Please sign in instead.')
-      }
-      
-      // If error code is not about existing user, throw the error
-      if (error.message !== 'User not found') {
-        throw error
-      }
-      
-      // If we get here, user doesn't exist
-      return false
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('already exists')) {
-        throw e
-      }
-      // Other errors we can ignore as they likely mean the user doesn't exist
-      return false
-    }
-  }
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
     try {
-      // First check if user exists
-      await checkExistingUser(email)
-
-      // If we get here, user doesn't exist, proceed with signup
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -67,7 +33,6 @@ export default function SignupPage() {
 
       if (data.user) {
         setSuccess(true)
-        // Redirect to login page after 3 seconds
         setTimeout(() => {
           router.push('/auth/login')
         }, 3000)
@@ -75,18 +40,6 @@ export default function SignupPage() {
     } catch (e) {
       console.error('Signup error:', e)
       setError(e instanceof Error ? e.message : 'An error occurred')
-      
-      // If it's an existing user error, add a link to the login page
-      if (e instanceof Error && e.message.includes('already exists')) {
-        setError(
-          <span>
-            An account with this email already exists.{' '}
-            <Link href="/auth/login" className="text-blue-600 hover:text-blue-500 underline">
-              Sign in instead
-            </Link>
-          </span>
-        )
-      }
     } finally {
       setLoading(false)
     }
