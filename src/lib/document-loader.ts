@@ -1,9 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { Document as LangChainDocument } from "langchain/document";
+// import { Document as LangChainDocument } from "langchain/document";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+// const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
 
 export class DocumentLoader {
   static async loadPDF(file: Blob): Promise<{

@@ -60,7 +60,7 @@ export function useAuth() {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase.auth, router])
 
   return { user, loading, error }
 } 
