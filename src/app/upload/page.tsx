@@ -5,7 +5,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-type FileStatus = 'idle' | 'uploading' | 'success' | 'error'
+type FileStatus = 'idle' | 'uploading' | 'uploaded' | 'error'
 
 export default function UploadPage() {
   const { user, loading } = useAuth()
@@ -15,6 +15,7 @@ export default function UploadPage() {
   const [fileStatus, setFileStatus] = useState<FileStatus>('idle')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [documentId, setDocumentId] = useState<string | null>(null)
 
   const handleSignOut = async () => {
     console.log('Signing out...')
@@ -60,7 +61,13 @@ export default function UploadPage() {
   }
 
   const validateFile = (file: File) => {
-    const validTypes = ['application/pdf', 'application/msword', 'text/plain']
+    const validTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain'
+    ]
+    console.log('File type:', file.type)
     if (!validTypes.includes(file.type)) {
       alert('Please upload a PDF, Word, or text file')
       return false
@@ -68,7 +75,7 @@ export default function UploadPage() {
     return true
   }
 
-  const handleAnalyze = async () => {
+  const handleUpload = async () => {
     if (!selectedFile || !user) return
 
     setFileStatus('uploading')
@@ -78,7 +85,6 @@ export default function UploadPage() {
       const documentId = crypto.randomUUID()
       const filePath = `${user.id}/${documentId}/${selectedFile.name}`
 
-      // Upload file
       const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, selectedFile, {
@@ -88,12 +94,12 @@ export default function UploadPage() {
 
       if (uploadError) throw uploadError
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath)
 
-      // Create document record
+      console.log('Generated public URL:', publicUrl)
+
       const { error: dbError } = await supabase
         .from('documents')
         .insert({
@@ -110,12 +116,29 @@ export default function UploadPage() {
 
       if (dbError) throw dbError
 
-      setFileStatus('success')
-      router.push(`/documents/${documentId}`)
+      setDocumentId(documentId)
+      setFileStatus('uploaded')
     } catch (error) {
       console.error('Upload error:', error)
       setFileStatus('error')
       setUploadError(error instanceof Error ? error.message : 'Failed to upload file')
+    }
+  }
+
+  const handleAnalyze = async () => {
+    if (!documentId) return
+
+    try {
+      await fetch('/api/process-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId })
+      })
+
+      router.push(`/documents/${documentId}`)
+    } catch (error) {
+      console.error('Error starting analysis:', error)
+      setUploadError('Failed to start analysis')
     }
   }
 
@@ -194,26 +217,37 @@ export default function UploadPage() {
         )}
 
         {selectedFile && (
-          <div className="mt-6 flex justify-center">
-            <button
-              className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white
-                ${fileStatus === 'uploading' 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              onClick={handleAnalyze}
-              disabled={fileStatus === 'uploading'}
-            >
-              {fileStatus === 'uploading' ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Uploading...
-                </>
-              ) : 'Analyze Document'}
-            </button>
+          <div className="mt-6 flex justify-center space-x-4">
+            {fileStatus !== 'uploaded' && (
+              <button
+                className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white
+                  ${fileStatus === 'uploading' 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                onClick={handleUpload}
+                disabled={fileStatus === 'uploading'}
+              >
+                {fileStatus === 'uploading' ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Uploading...
+                  </>
+                ) : 'Upload Document'}
+              </button>
+            )}
+
+            {fileStatus === 'uploaded' && (
+              <button
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+                onClick={handleAnalyze}
+              >
+                Analyze Document
+              </button>
+            )}
           </div>
         )}
       </div>
