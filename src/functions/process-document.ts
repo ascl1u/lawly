@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/config'
 import { DocumentLoader } from '@/lib/document-loader'
+import { analyzeDocument } from '@/lib/ai-service'
 
 export async function processDocument(documentId: string) {
   const updateStatus = async (status: string, error?: string) => {
@@ -63,6 +64,64 @@ export async function processDocument(documentId: string) {
     
     const { text, sections } = await DocumentLoader.load(fileData)
     console.log('Document processed successfully:', { textLength: text.length, sectionsCount: sections.length })
+
+    // Add analysis step
+    console.log('Process Document - Starting analysis with text length:', text.length)
+    console.log('Process Document - Calling analyzeDocument')
+    const analysis = await analyzeDocument(text)
+    
+    // Validate analysis result
+    if (!analysis?.summary || !analysis?.simplifiedText || !Array.isArray(analysis?.risks)) {
+      console.error('Invalid analysis structure:', analysis)
+      throw new Error('Invalid analysis result structure')
+    }
+
+    // Validate each risk object
+    analysis.risks.forEach((risk, index) => {
+      if (!['low', 'medium', 'high'].includes(risk.severity) || 
+          !risk.description || 
+          !risk.recommendation) {
+        console.error(`Invalid risk object at index ${index}:`, risk)
+        throw new Error(`Invalid risk data at index ${index}`)
+      }
+    })
+
+    console.log('Process Document - Analysis completed successfully:', {
+      hasSummary: !!analysis.summary,
+      risksCount: analysis.risks.length
+    })
+
+    const { error: summaryError } = await supabaseAdmin
+      .from('summaries')
+      .insert({
+        id: crypto.randomUUID(),
+        document_id: documentId,
+        summary_text: analysis.summary,
+        simplified_text: analysis.simplifiedText,
+        created_at: new Date().toISOString()
+      })
+
+    if (summaryError) {
+      console.error('Summary insert error:', summaryError)
+      throw new Error(`Failed to insert summary: ${summaryError.message}`)
+    }
+
+    // Insert risks
+    const { error: risksError } = await supabaseAdmin
+      .from('risk_analyses')
+      .insert(analysis.risks.map(risk => ({
+        id: crypto.randomUUID(),
+        document_id: documentId,
+        risk_description: risk.description,
+        risk_severity: risk.severity,
+        suggested_action: risk.recommendation,
+        created_at: new Date().toISOString()
+      })))
+
+    if (risksError) {
+      console.error('Risks insert error:', risksError)
+      throw new Error(`Failed to insert risks: ${risksError.message}`)
+    }
 
     const { error: updateError } = await supabaseAdmin
       .from('documents')

@@ -1,3 +1,23 @@
+export interface DocumentDetails {
+  id: string;
+  file_name: string;
+  file_type: string;
+  file_url: string | null;
+  content: string | null;
+  uploaded_at: string;
+  status: 'pending' | 'parsing' | 'analyzed' | 'error';
+  parsed_at: string | null;
+  summary?: {
+    summary_text: string | null;
+    simplified_text: string | null;
+  };
+  risks?: Array<{
+    risk_severity: string | null;
+    risk_description: string | null;
+    suggested_action: string | null;
+  }>;
+}
+
 export interface Document {
   id: string;
   userId: string;
