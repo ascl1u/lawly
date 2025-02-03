@@ -18,67 +18,84 @@ interface AnalysisResult {
   simplifiedText: string
 }
 
-export async function analyzeDocument(text: string): Promise<AnalysisResult> {
-  console.log('AI Service - Starting document analysis')
+interface RiskResponse {
+  severity: string
+  description: string
+  recommendation: string
+}
+
+function validateRisks(risks: RiskResponse[]): AnalysisResult['risks'] {
+  return risks.map(risk => ({
+    severity: (['low', 'medium', 'high'].includes(risk?.severity?.toLowerCase?.())
+      ? risk.severity.toLowerCase()
+      : 'medium') as 'low' | 'medium' | 'high',
+    description: risk?.description || 'Risk description not provided',
+    recommendation: risk?.recommendation || 'Consult legal expert'
+  }))
+}
+
+function extractJSON(text: string): RiskResponse[] {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
-    console.log('AI Service - Model initialized')
+    const jsonStart = text.indexOf('[')
+    const jsonEnd = text.lastIndexOf(']') + 1
+    if (jsonStart === -1 || jsonEnd === 0) throw new Error('No JSON array found')
+    return JSON.parse(text.slice(jsonStart, jsonEnd))
+  } catch (error) {
+    console.error('JSON extraction failed:', text, error)
+    throw new Error('Failed to extract valid JSON')
+  }
+}
 
-    const prompt = `You are a legal document analyzer. Analyze this document and provide a JSON response.
-    IMPORTANT: Return ONLY the JSON object, no other text or formatting.
+export async function analyzeDocument(text: string): Promise<AnalysisResult> {
+  const model = genAI.getGenerativeModel({ 
+    model: 'gemini-pro',
+    generationConfig: { temperature: 0.2 }
+  })
 
-    Document text:
-    ${text}
+  const summaryPrompt = `Provide a concise summary of this legal document in 2-3 paragraphs: ${text}`
+  
+  const risksPrompt = `Analyze this legal document and list key risks.
+Output MUST be a valid JSON array with EXACTLY this structure:
+[
+  {
+    "severity": "low|medium|high",
+    "description": "1-2 sentence risk explanation",
+    "recommendation": "1-2 sentence mitigation steps"
+  }
+]
+Document: ${text}
+Respond ONLY with the JSON array, no other text.`
 
-    Response must be a valid JSON object with these exact fields:
-    - summary: A brief overview
-    - risks: An array of risk objects, each with:
-      - severity: exactly "low", "medium", or "high"
-      - description: risk description
-      - recommendation: mitigation advice
-    - simplifiedText: plain language version`
+  const simplifiedPrompt = `Explain this legal document in simple, plain language, avoiding legal jargon: ${text}`
 
-    console.log('AI Service - Sending prompt to Gemini')
-    const result = await model.generateContent(prompt)
-    console.log('AI Service - Received response from Gemini')
-    
-    const response = await result.response
-    const responseText = response.text().trim()
-    console.log('AI Service - Raw response:', responseText)
+  try {
+    const [summaryResult, risksResult, simplifiedResult] = await Promise.all([
+      model.generateContent(summaryPrompt),
+      model.generateContent(risksPrompt),
+      model.generateContent(simplifiedPrompt)
+    ])
 
-    // Clean up any potential markdown or code block formatting
-    const cleanedText = responseText
-      .replace(/```json\s*/g, '')
-      .replace(/```\s*/g, '')
-      .replace(/^{/m, '{')
-      .replace(/}$/m, '}')
-      .trim()
+    const summary = summaryResult.response.text().trim()
+    const risksText = risksResult.response.text().trim()
+    const simplifiedText = simplifiedResult.response.text().trim()
 
+    let risks: AnalysisResult['risks'] = []
     try {
-      const analysisResult = JSON.parse(cleanedText)
-      
-      // Validate the response structure
-      if (!analysisResult.summary || !analysisResult.simplifiedText || !Array.isArray(analysisResult.risks)) {
-        throw new Error('Invalid response structure from AI')
-      }
+      const parsedRisks = extractJSON(risksText)
+      risks = validateRisks(parsedRisks)
+    } catch (error) {
+      console.error('Risk parsing failed:', error)
+      risks = []
+    }
 
-      console.log('AI Service - Analysis complete')
-      return analysisResult
-    } catch (parseError) {
-      console.error('AI Service - JSON parse error:', {
-        originalText: responseText,
-        cleanedText,
-        error: parseError
-      })
-      throw new Error('Failed to parse AI response as JSON')
+    return {
+      summary,
+      risks,
+      simplifiedText
     }
   } catch (error) {
-    console.error('AI Service - Error during analysis:', {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-    throw error
+    console.error('Analysis failed:', error)
+    throw new Error('Failed to analyze document')
   }
 }
 
@@ -105,4 +122,4 @@ export async function generateChatResponse(
     console.error('Error generating chat response:', error)
     throw new Error('Failed to generate response')
   }
-} 
+}

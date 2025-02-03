@@ -22,6 +22,8 @@ export default function DocumentPage() {
   const [activeView, setActiveView] = useState<'risks' | 'summary' | 'chat'>('risks')
 
   useEffect(() => {
+    let pollingInterval: NodeJS.Timeout
+
     const fetchDocument = async () => {
       if (!user) return
 
@@ -34,50 +36,73 @@ export default function DocumentPage() {
 
         if (error) throw error
 
-        // Debug log 1
-        console.log('Document data:', document)
+        // If document is still processing, don't fetch analysis data
+        if (document.status !== 'analyzed') {
+          setDocument(document)
+          return false
+        }
 
-        // Fetch summary, risks, and messages in parallel
         const [summaryResult, risksResult, messagesResult] = await Promise.all([
           supabase
             .from('summaries')
-            .select('summary_text, simplified_text')
+            .select('*')
             .eq('document_id', id)
             .single(),
           supabase
             .from('risk_analyses')
-            .select('risk_severity, risk_description, suggested_action')
+            .select('*')
             .eq('document_id', id),
           supabase
             .from('messages')
-            .select('id, content, role, created_at')
+            .select('*')
             .eq('document_id', id)
             .order('created_at', { ascending: true })
         ])
 
         setDocument({
           ...document,
-          summary: summaryResult.data,
-          risks: risksResult.data || [],
+          summary: {
+            summary_text: summaryResult.data?.summary_text || null,
+            simplified_text: summaryResult.data?.simplified_text || null
+          },
+          risks: risksResult.data?.map(risk => ({
+            risk_severity: risk.risk_severity,
+            risk_description: risk.risk_description,
+            suggested_action: risk.suggested_action
+          })) || [],
           messages: messagesResult.data || []
         })
 
-        // Debug log 4
-        console.log('Final document state:', {
-          ...document,
-          summary: summaryResult.data,
-          risks: risksResult.data || [],
-          messages: messagesResult.data || []
-        })
+        return true
       } catch (e) {
         console.error('Error fetching document:', e)
         setError(e instanceof Error ? e.message : 'Failed to load document')
+        return true
       } finally {
         setLoading(false)
       }
     }
 
-    fetchDocument()
+    const startPolling = () => {
+      pollingInterval = setInterval(async () => {
+        const completed = await fetchDocument()
+        if (completed) {
+          clearInterval(pollingInterval)
+        }
+      }, 2000) // Poll every 2 seconds
+    }
+
+    fetchDocument().then(completed => {
+      if (!completed) {
+        startPolling()
+      }
+    })
+
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval)
+      }
+    }
   }, [id, user, supabase])
 
   if (authLoading || loading) {

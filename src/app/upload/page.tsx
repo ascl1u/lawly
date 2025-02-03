@@ -16,6 +16,7 @@ export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [documentId, setDocumentId] = useState<string | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   const handleSignOut = async () => {
     console.log('Signing out...')
@@ -127,7 +128,8 @@ export default function UploadPage() {
 
   const handleAnalyze = async () => {
     if (!documentId) return
-
+    setIsAnalyzing(true)
+    
     try {
       await fetch('/api/process-document', {
         method: 'POST',
@@ -135,10 +137,11 @@ export default function UploadPage() {
         body: JSON.stringify({ documentId })
       })
 
-      router.push(`/documents/${documentId}`)
+      router.push(`/documents/${documentId}?processing=true`)
     } catch (error) {
       console.error('Error starting analysis:', error)
       setUploadError('Failed to start analysis')
+      setIsAnalyzing(false)
     }
   }
 
@@ -242,10 +245,11 @@ export default function UploadPage() {
 
             {fileStatus === 'uploaded' && (
               <button
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleAnalyze}
+                disabled={isAnalyzing}
               >
-                Analyze Document
+                {isAnalyzing ? 'Analyzing Document...' : 'Analyze Document'}
               </button>
             )}
           </div>
