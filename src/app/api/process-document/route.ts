@@ -1,7 +1,7 @@
 import { processDocument } from '@/functions/process-document'
 import { NextResponse } from 'next/server'
 
-export const maxDuration = 300 // Set max duration to 5 minutes
+export const maxDuration = 60 // Set max duration to 5 minutes
 
 export async function POST(request: Request) {
   try {
