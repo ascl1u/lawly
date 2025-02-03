@@ -5,9 +5,11 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Container } from '@/components/ui/Container'
-import { Card, CardHeader, CardSection } from '@/components/ui/Card'
 import { DocumentDetails } from '@/types'
 import { DocumentViewer } from '@/components/DocumentViewer'
+import { RiskSidebar } from '@/components/RiskSidebar'
+import { SidebarToggle } from '@/components/ui/SidebarToggle'
+import { SummarySidebar } from '@/components/SummarySidebar'
 
 export default function DocumentPage() {
   const { id } = useParams()
@@ -16,6 +18,7 @@ export default function DocumentPage() {
   const [document, setDocument] = useState<DocumentDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeView, setActiveView] = useState<'risks' | 'summary'>('risks')
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -30,22 +33,40 @@ export default function DocumentPage() {
 
         if (error) throw error
 
+        // Debug log 1
+        console.log('Document data:', document)
+
         // Fetch analysis
-        const { data: summary } = await supabase
+        const { data: summary, error: summaryError } = await supabase
           .from('summaries')
           .select('summary_text, simplified_text')
           .eq('document_id', id)
           .single()
 
+        // Debug log 2
+        console.log('Summary data:', summary)
+        if (summaryError) console.error('Summary error:', summaryError)
+
         // Fetch risks
-        const { data: risks } = await supabase
+        const { data: risks, error: risksError } = await supabase
           .from('risk_analyses')
           .select('risk_severity, risk_description, suggested_action')
           .eq('document_id', id)
 
+        // Debug log 3
+        console.log('Risks data:', risks)
+        if (risksError) console.error('Risks error:', risksError)
+
         setDocument({
           ...document,
-          analysis: summary,
+          summary: summary,
+          risks: risks || []
+        })
+
+        // Debug log 4
+        console.log('Final document state:', {
+          ...document,
+          summary: summary,
           risks: risks || []
         })
       } catch (e) {
@@ -84,60 +105,39 @@ export default function DocumentPage() {
 
   return (
     <Container>
-      <Card>
-        <CardHeader 
-          title={document.file_name}
-          subtitle={`${new Date(document.uploaded_at).toLocaleDateString()} - ${document.status}`}
-        />
-
-        <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-          <div className="space-y-8">
-            <CardSection title="Document Summary">
-              {document.summary ? (
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">Summary</h4>
-                    <p className="mt-1 text-sm text-gray-900">{document.summary.summary_text}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">Simplified Version</h4>
-                    <p className="mt-1 text-sm text-gray-900">{document.summary.simplified_text}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-24 bg-gray-100 rounded-md animate-pulse" />
-              )}
-            </CardSection>
-
-            <CardSection title="Risk Analysis">
-              {document.risks ? (
-                <div className="space-y-4">
-                  {document.risks.map((risk, index) => (
-                    <div key={index} className={`p-4 rounded-md border ${
-                      risk.risk_severity === 'high' ? 'border-red-200 bg-red-50' :
-                      risk.risk_severity === 'medium' ? 'border-yellow-200 bg-yellow-50' :
-                      'border-green-200 bg-green-50'
-                    }`}>
-                      <h4 className="font-medium">{risk.risk_description}</h4>
-                      <p className="mt-1 text-sm text-gray-600">{risk.suggested_action}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="h-32 bg-gray-100 rounded-md animate-pulse" />
-              )}
-            </CardSection>
-
-            <CardSection title="Ask Questions">
-              <div className="h-24 bg-gray-100 rounded-md animate-pulse" />
-            </CardSection>
-
-            <CardSection title="Document Content">
-              <DocumentViewer document={document} />
-            </CardSection>
+      <div className="flex flex-col h-screen">
+        {/* Header */}
+        <div className="bg-gray-800 border-b border-gray-700">
+          <div className="px-4 py-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-100">{document.file_name}</h1>
+                <p className="text-sm text-gray-400">
+                  {new Date(document.uploaded_at).toLocaleDateString()} - {document.status}
+                </p>
+              </div>
+              <SidebarToggle activeView={activeView} onToggle={setActiveView} />
+            </div>
           </div>
         </div>
-      </Card>
+
+        {/* Main Content */}
+        <div className="flex-1 flex overflow-hidden bg-gray-900">
+          {/* Document Panel (70%) */}
+          <div className="w-[70%] overflow-auto p-6 bg-gray-900">
+            <DocumentViewer document={document} />
+          </div>
+
+          {/* Sidebar (30%) */}
+          <div className="w-[30%] border-l border-gray-700 bg-gray-900 overflow-auto">
+            {activeView === 'risks' ? (
+              <RiskSidebar document={document} />
+            ) : (
+              <SummarySidebar document={document} />
+            )}
+          </div>
+        </div>
+      </div>
     </Container>
   )
 } 
