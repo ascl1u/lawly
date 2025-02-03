@@ -3,7 +3,11 @@ import { DocumentLoader } from '@/lib/document-loader'
 import { analyzeDocument } from '@/lib/ai-service'
 
 export async function processDocument(documentId: string) {
+  console.log('=== PROCESS DOCUMENT START ===', { documentId })
+  console.time('total-processing-time')
+  
   const updateStatus = async (status: string, error?: string) => {
+    console.log('Updating document status:', { status, error })
     const { error: statusError } = await supabaseAdmin
       .from('documents')
       .update({ 
@@ -21,7 +25,8 @@ export async function processDocument(documentId: string) {
 
   try {
     await updateStatus('parsing')
-    console.log('Processing document:', documentId)
+    console.log('Starting document processing pipeline')
+    console.time('document-fetch')
 
     const { data: document, error: fetchError } = await supabaseAdmin
       .from('documents')
@@ -29,7 +34,12 @@ export async function processDocument(documentId: string) {
       .eq('id', documentId)
       .single()
 
-    console.log('Fetch response:', { document, fetchError })
+    console.timeEnd('document-fetch')
+    console.log('Document fetch result:', { 
+      hasDocument: !!document, 
+      hasError: !!fetchError,
+      fileUrl: document?.file_url 
+    })
 
     if (fetchError) {
       throw new Error(`Failed to fetch document: ${fetchError.message}`)
@@ -43,11 +53,16 @@ export async function processDocument(documentId: string) {
       throw new Error('Document missing file URL')
     }
 
-    console.log('Attempting to download file:', `${document.user_id}/${documentId}/${document.file_name}`)
-    
+    console.time('file-download')
     const { data: fileData, error: downloadError } = await supabaseAdmin.storage
       .from('documents')
       .download(`${document.user_id}/${documentId}/${document.file_name}`)
+    console.timeEnd('file-download')
+    console.log('File download complete:', { 
+      fileSize: fileData?.size,
+      fileType: fileData?.type,
+      hasError: !!downloadError 
+    })
 
     if (downloadError) {
       console.error('Download error:', downloadError)
@@ -58,18 +73,25 @@ export async function processDocument(documentId: string) {
       throw new Error('No file data received')
     }
 
-    console.log('File downloaded successfully, processing with DocumentLoader')
-    console.log('File type:', fileData.type)
-    console.log('File size:', fileData.size)
-    
+    console.time('text-extraction')
     const { text, sections } = await DocumentLoader.load(fileData)
-    console.log('Document processed successfully:', { textLength: text.length, sectionsCount: sections.length })
+    console.timeEnd('text-extraction')
+    console.log('Text extraction complete:', { 
+      textLength: text.length,
+      sectionsCount: sections.length 
+    })
 
-    // Add analysis step
-    console.log('Process Document - Starting analysis with text length:', text.length)
-    console.log('Process Document - Calling analyzeDocument')
+    console.time('ai-analysis')
+    console.log('Starting AI analysis with text length:', text.length)
     const analysis = await analyzeDocument(text)
-    
+    console.timeEnd('ai-analysis')
+    console.log('AI analysis complete:', {
+      hasSummary: !!analysis?.summary,
+      summaryLength: analysis?.summary?.length,
+      risksCount: analysis?.risks?.length,
+      simplifiedTextLength: analysis?.simplifiedText?.length
+    })
+
     // Validate analysis result
     if (!analysis?.summary || !analysis?.simplifiedText || !Array.isArray(analysis?.risks)) {
       console.error('Invalid analysis structure:', analysis)
@@ -153,20 +175,18 @@ export async function processDocument(documentId: string) {
       throw new Error(`Failed to insert sections: ${sectionsError.message}`)
     }
 
+    console.timeEnd('total-processing-time')
+    console.log('=== PROCESS DOCUMENT COMPLETE ===')
     return { success: true }
   } catch (error) {
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : JSON.stringify(error) || 'Unknown error occurred'
-    
-    console.error('Document processing error:', {
+    console.timeEnd('total-processing-time')
+    console.error('=== PROCESS DOCUMENT FAILED ===', {
       error,
       type: typeof error,
-      message: errorMessage,
+      message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
     })
-    
-    await updateStatus('error', errorMessage)
+    await updateStatus('error', error instanceof Error ? error.message : JSON.stringify(error) || 'Unknown error')
     throw error
   }
 } 

@@ -47,6 +47,9 @@ function extractJSON(text: string): RiskResponse[] {
 }
 
 export async function analyzeDocument(text: string): Promise<AnalysisResult> {
+  console.log('=== AI ANALYSIS START ===')
+  console.time('total-ai-time')
+
   const model = genAI.getGenerativeModel({ 
     model: 'gemini-pro',
     generationConfig: { temperature: 0.2 }
@@ -69,11 +72,23 @@ Respond ONLY with the JSON array, no other text.`
   const simplifiedPrompt = `Explain this legal document in simple, plain language, avoiding legal jargon: ${text}`
 
   try {
-    const [summaryResult, risksResult, simplifiedResult] = await Promise.all([
-      model.generateContent(summaryPrompt),
-      model.generateContent(risksPrompt),
-      model.generateContent(simplifiedPrompt)
-    ])
+    console.time('summary-generation')
+    const summaryResult = await model.generateContent(summaryPrompt)
+    console.timeEnd('summary-generation')
+    console.log('Summary generated:', { length: summaryResult.response.text().length })
+
+    console.time('risks-generation')
+    const risksResult = await model.generateContent(risksPrompt)
+    console.timeEnd('risks-generation')
+    console.log('Risks generated:', { 
+      responseLength: risksResult.response.text().length,
+      rawResponse: risksResult.response.text().slice(0, 100) + '...' 
+    })
+
+    console.time('simplified-generation')
+    const simplifiedResult = await model.generateContent(simplifiedPrompt)
+    console.timeEnd('simplified-generation')
+    console.log('Simplified text generated:', { length: simplifiedResult.response.text().length })
 
     const summary = summaryResult.response.text().trim()
     const risksText = risksResult.response.text().trim()
@@ -88,14 +103,21 @@ Respond ONLY with the JSON array, no other text.`
       risks = []
     }
 
+    console.timeEnd('total-ai-time')
+    console.log('=== AI ANALYSIS COMPLETE ===')
     return {
       summary,
       risks,
       simplifiedText
     }
   } catch (error) {
-    console.error('Analysis failed:', error)
-    throw new Error('Failed to analyze document')
+    console.timeEnd('total-ai-time')
+    console.error('=== AI ANALYSIS FAILED ===', {
+      error,
+      type: typeof error,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    })
+    throw error
   }
 }
 

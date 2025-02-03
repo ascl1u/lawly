@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Container } from '@/components/ui/Container'
 import { DocumentDetails } from '@/types'
@@ -20,12 +20,14 @@ export default function DocumentPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<'risks' | 'summary' | 'chat'>('risks')
+  const [isDeleted, setIsDeleted] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     let pollingInterval: NodeJS.Timeout
 
     const fetchDocument = async () => {
-      if (!user) return
+      if (!user || isDeleted) return
 
       try {
         const { data: document, error } = await supabase
@@ -34,7 +36,13 @@ export default function DocumentPage() {
           .eq('id', id)
           .single()
 
-        if (error) throw error
+        if (error) {
+          if (error.code === 'PGRST116') {
+            setIsDeleted(true)
+            return true
+          }
+          throw error
+        }
 
         // If document is still processing, don't fetch analysis data
         if (document.status !== 'analyzed') {
@@ -103,7 +111,12 @@ export default function DocumentPage() {
         clearInterval(pollingInterval)
       }
     }
-  }, [id, user, supabase])
+  }, [id, user, supabase, isDeleted])
+
+  if (isDeleted) {
+    router.push('/documents')
+    return null
+  }
 
   if (authLoading || loading) {
     return (
