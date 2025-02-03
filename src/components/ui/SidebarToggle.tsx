@@ -1,6 +1,6 @@
 interface SidebarToggleProps {
-  activeView: 'risks' | 'summary'
-  onToggle: (view: 'risks' | 'summary') => void
+  activeView: 'risks' | 'summary' | 'chat'
+  onToggle: (view: 'risks' | 'summary' | 'chat') => void
 }
 
 export function SidebarToggle({ activeView, onToggle }: SidebarToggleProps) {
@@ -25,6 +25,16 @@ export function SidebarToggle({ activeView, onToggle }: SidebarToggleProps) {
         }`}
       >
         Summary
+      </button>
+      <button
+        onClick={() => onToggle('chat')}
+        className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+          activeView === 'chat' 
+            ? 'bg-blue-600 text-white' 
+            : 'text-gray-400 hover:text-gray-200'
+        }`}
+      >
+        Chat
       </button>
     </div>
   )

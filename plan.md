@@ -37,7 +37,9 @@ Intuitive design for easy document uploads and navigation.
 Highlighted annotations for identified risks and key clauses.
 Responsive design for both desktop and mobile platforms.
 
-6. Progress and History Tracking:
+Quality of Life Features:
+
+1. Progress and History Tracking:
 
 Store previously analyzed documents for easy retrieval.
 Keep track of user queries and insights provided.

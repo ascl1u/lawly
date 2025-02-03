@@ -16,6 +16,12 @@ export interface DocumentDetails {
     risk_description: string | null;
     suggested_action: string | null;
   }>;
+  messages?: Array<{
+    id: string;
+    content: string;
+    role: 'user' | 'assistant';
+    created_at: string;
+  }>;
 }
 
 export interface Document {

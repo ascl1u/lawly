@@ -10,6 +10,7 @@ import { DocumentViewer } from '@/components/DocumentViewer'
 import { RiskSidebar } from '@/components/RiskSidebar'
 import { SidebarToggle } from '@/components/ui/SidebarToggle'
 import { SummarySidebar } from '@/components/SummarySidebar'
+import { ChatSidebar } from '@/components/ChatSidebar'
 
 export default function DocumentPage() {
   const { id } = useParams()
@@ -18,7 +19,7 @@ export default function DocumentPage() {
   const [document, setDocument] = useState<DocumentDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeView, setActiveView] = useState<'risks' | 'summary'>('risks')
+  const [activeView, setActiveView] = useState<'risks' | 'summary' | 'chat'>('risks')
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -36,38 +37,37 @@ export default function DocumentPage() {
         // Debug log 1
         console.log('Document data:', document)
 
-        // Fetch analysis
-        const { data: summary, error: summaryError } = await supabase
-          .from('summaries')
-          .select('summary_text, simplified_text')
-          .eq('document_id', id)
-          .single()
-
-        // Debug log 2
-        console.log('Summary data:', summary)
-        if (summaryError) console.error('Summary error:', summaryError)
-
-        // Fetch risks
-        const { data: risks, error: risksError } = await supabase
-          .from('risk_analyses')
-          .select('risk_severity, risk_description, suggested_action')
-          .eq('document_id', id)
-
-        // Debug log 3
-        console.log('Risks data:', risks)
-        if (risksError) console.error('Risks error:', risksError)
+        // Fetch summary, risks, and messages in parallel
+        const [summaryResult, risksResult, messagesResult] = await Promise.all([
+          supabase
+            .from('summaries')
+            .select('summary_text, simplified_text')
+            .eq('document_id', id)
+            .single(),
+          supabase
+            .from('risk_analyses')
+            .select('risk_severity, risk_description, suggested_action')
+            .eq('document_id', id),
+          supabase
+            .from('messages')
+            .select('id, content, role, created_at')
+            .eq('document_id', id)
+            .order('created_at', { ascending: true })
+        ])
 
         setDocument({
           ...document,
-          summary: summary,
-          risks: risks || []
+          summary: summaryResult.data,
+          risks: risksResult.data || [],
+          messages: messagesResult.data || []
         })
 
         // Debug log 4
         console.log('Final document state:', {
           ...document,
-          summary: summary,
-          risks: risks || []
+          summary: summaryResult.data,
+          risks: risksResult.data || [],
+          messages: messagesResult.data || []
         })
       } catch (e) {
         console.error('Error fetching document:', e)
@@ -132,8 +132,10 @@ export default function DocumentPage() {
           <div className="w-[30%] border-l border-gray-700 bg-gray-900 overflow-auto">
             {activeView === 'risks' ? (
               <RiskSidebar document={document} />
-            ) : (
+            ) : activeView === 'summary' ? (
               <SummarySidebar document={document} />
+            ) : (
+              <ChatSidebar document={document} />
             )}
           </div>
         </div>

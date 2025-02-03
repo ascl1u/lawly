@@ -80,4 +80,29 @@ export async function analyzeDocument(text: string): Promise<AnalysisResult> {
     })
     throw error
   }
+}
+
+export async function generateChatResponse(
+  question: string, 
+  documentContent: string
+): Promise<string> {
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+    
+    const prompt = `You are a legal assistant. Using only the context of this legal document, answer the following question.
+    If you cannot answer based solely on the document content, say so.
+
+    Document content:
+    ${documentContent}
+
+    Question: ${question}
+    `
+
+    const result = await model.generateContent(prompt)
+    const response = await result.response
+    return response.text()
+  } catch (error) {
+    console.error('Error generating chat response:', error)
+    throw new Error('Failed to generate response')
+  }
 } 
