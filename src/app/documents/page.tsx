@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react'
 import { Container } from '@/components/ui/Container'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { DocumentActions } from '@/components/ui/DocumentActions'
-import { redis } from '@/lib/queue'
 
 interface DocumentItem {
   id: string
@@ -54,15 +53,14 @@ export default function DocumentsPage() {
 
   const handleDelete = async (doc: DocumentItem) => {
     if (!user) return
-    const jobId = `doc:${doc.id}`
 
     try {
       await Promise.all([
         // Delete from Supabase
         supabase.from('documents').delete().eq('id', doc.id),
         supabase.storage.from('documents').remove([`${user.id}/${doc.id}/${doc.file_name}`]),
-        // Delete from Redis
-        redis.del(jobId)
+        // Delete from Redis via API
+        fetch(`/api/documents/${doc.id}`, { method: 'DELETE' })
       ])
 
       setDocuments(documents.filter(d => d.id !== doc.id))
