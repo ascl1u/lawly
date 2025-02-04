@@ -11,6 +11,7 @@ import { RiskSidebar } from '@/components/RiskSidebar'
 import { SidebarToggle } from '@/components/ui/SidebarToggle'
 import { SummarySidebar } from '@/components/SummarySidebar'
 import { ChatSidebar } from '@/components/ChatSidebar'
+import { ProgressBar } from '@/components/ProgressBar'
 
 export default function DocumentPage() {
   const { id } = useParams()
@@ -154,29 +155,44 @@ export default function DocumentPage() {
                   {new Date(document.uploaded_at).toLocaleDateString()} - {document.status}
                 </p>
               </div>
-              <SidebarToggle activeView={activeView} onToggle={setActiveView} />
+              {document.status === 'analyzed' && (
+                <SidebarToggle activeView={activeView} onToggle={setActiveView} />
+              )}
             </div>
+            {document.status !== 'analyzed' && (
+              <div className="mt-6">
+                <ProgressBar status={document.status} />
+              </div>
+            )}
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden bg-gray-900">
-          {/* Document Panel (70%) */}
-          <div className="w-[70%] overflow-auto p-6 bg-gray-900">
-            <DocumentViewer document={document} />
-          </div>
+        {document.status === 'analyzed' ? (
+          <div className="flex-1 flex overflow-hidden bg-gray-900">
+            {/* Document Panel (70%) */}
+            <div className="w-[70%] overflow-auto p-6 bg-gray-900">
+              <DocumentViewer document={document} />
+            </div>
 
-          {/* Sidebar (30%) */}
-          <div className="w-[30%] border-l border-gray-700 bg-gray-900 overflow-auto">
-            {activeView === 'risks' ? (
-              <RiskSidebar document={document} />
-            ) : activeView === 'summary' ? (
-              <SummarySidebar document={document} />
-            ) : (
-              <ChatSidebar document={document} />
-            )}
+            {/* Sidebar (30%) */}
+            <div className="w-[30%] border-l border-gray-700 bg-gray-900 overflow-auto">
+              {activeView === 'risks' ? (
+                <RiskSidebar document={document} />
+              ) : activeView === 'summary' ? (
+                <SummarySidebar document={document} />
+              ) : (
+                <ChatSidebar document={document} />
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-gray-900">
+            <div className="text-center text-gray-400">
+              <p>Please wait while we analyze your document...</p>
+            </div>
+          </div>
+        )}
       </div>
     </Container>
   )
