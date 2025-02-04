@@ -23,12 +23,29 @@ export default function DocumentPage() {
   const [activeView, setActiveView] = useState<'risks' | 'summary' | 'chat'>('risks')
   const [isDeleted, setIsDeleted] = useState(false)
   const router = useRouter()
+  const [jobId, setJobId] = useState<string | null>(null)
 
   useEffect(() => {
     let pollingInterval: NodeJS.Timeout
 
+    const checkJobStatus = async () => {
+      if (!jobId) return false
+      console.log('🔄 Polling job status:', { jobId })
+      const response = await fetch(`/api/jobs/${jobId}`)
+      const job = await response.json()
+      console.log('📊 Poll result:', job)
+      
+      if (job.status === 'failed') {
+        console.error('❌ Job failed:', job.error)
+        setError(job.error || 'Processing failed')
+        return true
+      }
+      
+      return job.status === 'completed'
+    }
+
     const fetchDocument = async () => {
-      if (!user || isDeleted) return
+      if (!user || isDeleted) return true
 
       try {
         const { data: document, error } = await supabase
@@ -45,27 +62,18 @@ export default function DocumentPage() {
           throw error
         }
 
-        // If document is still processing, don't fetch analysis data
+        // Set jobId for any non-analyzed status
         if (document.status !== 'analyzed') {
+          setJobId(`doc:${document.id}`)
           setDocument(document)
           return false
         }
 
+        // Fetch analysis data if document is analyzed
         const [summaryResult, risksResult, messagesResult] = await Promise.all([
-          supabase
-            .from('summaries')
-            .select('*')
-            .eq('document_id', id)
-            .single(),
-          supabase
-            .from('risk_analyses')
-            .select('*')
-            .eq('document_id', id),
-          supabase
-            .from('messages')
-            .select('*')
-            .eq('document_id', id)
-            .order('created_at', { ascending: true })
+          supabase.from('summaries').select('*').eq('document_id', id).single(),
+          supabase.from('risk_analyses').select('*').eq('document_id', id),
+          supabase.from('messages').select('*').eq('document_id', id).order('created_at', { ascending: true })
         ])
 
         setDocument({
@@ -94,11 +102,12 @@ export default function DocumentPage() {
 
     const startPolling = () => {
       pollingInterval = setInterval(async () => {
-        const completed = await fetchDocument()
+        const completed = await checkJobStatus()
         if (completed) {
           clearInterval(pollingInterval)
+          fetchDocument()
         }
-      }, 2000) // Poll every 2 seconds
+      }, 2000)
     }
 
     fetchDocument().then(completed => {
@@ -112,7 +121,7 @@ export default function DocumentPage() {
         clearInterval(pollingInterval)
       }
     }
-  }, [id, user, supabase, isDeleted])
+  }, [id, user, supabase, isDeleted, jobId])
 
   if (isDeleted) {
     router.push('/documents')

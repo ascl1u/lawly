@@ -1,26 +1,47 @@
 import { processDocument } from '@/functions/process-document'
+import { redis } from '@/lib/queue'
 import { NextResponse } from 'next/server'
 
-export const maxDuration = 60 // Set max duration to 1 minute
+export const maxDuration = 60 // limit for hobby plan
 
 export async function POST(request: Request) {
-  try {
-    const { documentId } = await request.json()
-    
-    // Start processing but don't wait for completion
-    processDocument(documentId).catch(error => {
-      console.error('Background processing error:', error)
-    })
+  const { documentId } = await request.json()
+  console.log('📥 Process document request:', { documentId })
+  const jobId = `doc:${documentId}`
 
-    // Return immediately
+  try {
+    console.log('🏁 Starting document processing')
+    await redis.set(jobId, JSON.stringify({
+      documentId,
+      status: 'processing',
+      updatedAt: new Date().toISOString()
+    }))
+
+    await processDocument(documentId)
+
+    await redis.set(jobId, JSON.stringify({
+      documentId,
+      status: 'completed',
+      updatedAt: new Date().toISOString()
+    }))
+
+    console.log('✅ Document processing completed')
     return NextResponse.json({ 
-      success: true, 
-      message: 'Document processing started' 
+      success: true,
+      jobId,
+      message: 'Document processed successfully'
     })
   } catch (error) {
-    console.error('API Processing error:', error)
+    console.error('❌ Processing error:', error)
+    await redis.set(jobId, JSON.stringify({
+      documentId,
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      updatedAt: new Date().toISOString()
+    }))
+
     return NextResponse.json(
-      { error: 'Failed to start processing' },
+      { error: 'Processing failed', jobId },
       { status: 500 }
     )
   }

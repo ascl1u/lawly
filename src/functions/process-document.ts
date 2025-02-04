@@ -2,22 +2,33 @@ import { supabaseAdmin } from '@/lib/config'
 import { DocumentLoader } from '@/lib/document-loader'
 import { analyzeDocument } from '@/lib/ai-service'
 import { generateUUID } from '@/lib/utils'
+import { redis } from '@/lib/queue'
 
 export async function processDocument(documentId: string) {
-
   console.log('=== PROCESS DOCUMENT START ===', { documentId })
   console.time('total-processing-time')
-  
+  const jobId = `doc:${documentId}`
+
   const updateStatus = async (status: string, error?: string) => {
-    console.log('Updating document status:', { status, error })
-    await supabaseAdmin
-      .from('documents')
-      .update({ 
+    console.log('Updating status:', { status, error })
+    
+    // Update both Redis and Supabase
+    await Promise.all([
+      redis.set(jobId, JSON.stringify({
+        documentId,
         status,
-        parsed_at: new Date().toISOString(),
-        error_message: error
-      })
-      .eq('id', documentId)
+        error,
+        updatedAt: new Date().toISOString()
+      })),
+      supabaseAdmin
+        .from('documents')
+        .update({ 
+          status,
+          parsed_at: new Date().toISOString(),
+          error_message: error
+        })
+        .eq('id', documentId)
+    ])
   }
 
   try {
@@ -82,6 +93,8 @@ export async function processDocument(documentId: string) {
     console.timeEnd('total-processing-time')
     return { success: true }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    await updateStatus('error', errorMessage)
     throw error
   }
 } 
