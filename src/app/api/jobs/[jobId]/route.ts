@@ -3,10 +3,12 @@ import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { jobId: string } }
-) {
+  context: { params: { jobId: string } }
+): Promise<NextResponse> {
+  const { jobId } = context.params
+
   try {
-    const status = await getJobStatus(params.jobId)
+    const status = await getJobStatus(jobId)
     return NextResponse.json(status)
   } catch {
     return NextResponse.json(
@@ -14,4 +16,4 @@ export async function GET(
       { status: 500 }
     )
   }
-} 
+}
