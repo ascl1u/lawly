@@ -3,9 +3,9 @@ import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  context: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ): Promise<NextResponse> {
-  const { jobId } = context.params
+  const { jobId } = await params
 
   try {
     const status = await getJobStatus(jobId)
