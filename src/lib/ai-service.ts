@@ -72,24 +72,14 @@ Respond ONLY with the JSON array, no other text.`
   const simplifiedPrompt = `Explain this legal document in simple, plain language, avoiding legal jargon: ${text}`
 
   try {
-    console.time('summary-generation')
-    const summaryResult = await model.generateContent(summaryPrompt)
-    console.timeEnd('summary-generation')
-    console.log('Summary generated:', { length: summaryResult.response.text().length })
+    // Run all AI tasks in parallel
+    const [summaryResult, risksResult, simplifiedResult] = await Promise.all([
+      model.generateContent(summaryPrompt),
+      model.generateContent(risksPrompt),
+      model.generateContent(simplifiedPrompt)
+    ])
 
-    console.time('risks-generation')
-    const risksResult = await model.generateContent(risksPrompt)
-    console.timeEnd('risks-generation')
-    console.log('Risks generated:', { 
-      responseLength: risksResult.response.text().length,
-      rawResponse: risksResult.response.text().slice(0, 100) + '...' 
-    })
-
-    console.time('simplified-generation')
-    const simplifiedResult = await model.generateContent(simplifiedPrompt)
-    console.timeEnd('simplified-generation')
-    console.log('Simplified text generated:', { length: simplifiedResult.response.text().length })
-
+    // Process results
     const summary = summaryResult.response.text().trim()
     const risksText = risksResult.response.text().trim()
     const simplifiedText = simplifiedResult.response.text().trim()
