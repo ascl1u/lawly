@@ -1,6 +1,6 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
-import Link from 'next/link'
+import Logo from '@/components/Logo'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,12 +22,7 @@ export default function RootLayout({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between h-16 items-center">
                 <div className="flex-shrink-0">
-                  <Link 
-                    href="/" 
-                    className="text-4xl font-bold text-white hover:text-blue-400 transition-colors"
-                  >
-                    Lawly
-                  </Link>
+                  <Logo />
                 </div>
               </div>
             </div>
