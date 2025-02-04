@@ -1,6 +1,6 @@
 MVP Summary for Lawly (AI-Powered Legal Assistant)
 Target Audience: Small businesses, legal professionals, and individuals seeking accessible legal insights.
-Platform: Web app built using Vercel and Next.js.
+Platform: Web app built using Vercel and Next.js 15+.
 
 Tech Stack:
 Backend: Supabase for storing user files, summaries, and insights.
