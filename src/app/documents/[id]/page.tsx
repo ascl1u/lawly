@@ -12,6 +12,7 @@ import { SidebarToggle } from '@/components/ui/SidebarToggle'
 import { SummarySidebar } from '@/components/SummarySidebar'
 import { ChatSidebar } from '@/components/ChatSidebar'
 import { ProgressBar } from '@/components/ProgressBar'
+import { ResizableLayout } from '@/components/ResizableLayout'
 
 export default function DocumentPage() {
   const { id } = useParams()
@@ -152,8 +153,8 @@ export default function DocumentPage() {
   if (!document) return null
 
   return (
-    <Container>
-      <div className="flex flex-col h-screen">
+    <Container className="h-[calc(100vh-4rem)]">
+      <div className="h-full flex flex-col">
         {/* Header */}
         <div className="bg-gray-800 border-b border-gray-700">
           <div className="px-4 py-6">
@@ -178,22 +179,19 @@ export default function DocumentPage() {
 
         {/* Main Content */}
         {document.status === 'analyzed' ? (
-          <div className="flex-1 flex overflow-hidden bg-gray-900">
-            {/* Document Panel (70%) */}
-            <div className="w-[70%] overflow-auto p-6 bg-gray-900">
-              <DocumentViewer document={document} />
-            </div>
-
-            {/* Sidebar (30%) */}
-            <div className="w-[30%] border-l border-gray-700 bg-gray-900 overflow-auto">
-              {activeView === 'risks' ? (
-                <RiskSidebar document={document} />
-              ) : activeView === 'summary' ? (
-                <SummarySidebar document={document} />
-              ) : (
-                <ChatSidebar document={document} />
-              )}
-            </div>
+          <div className="flex-1 overflow-hidden">
+            <ResizableLayout
+              mainContent={<DocumentViewer document={document} />}
+              sidebarContent={
+                activeView === 'risks' ? (
+                  <RiskSidebar document={document} />
+                ) : activeView === 'summary' ? (
+                  <SummarySidebar document={document} />
+                ) : (
+                  <ChatSidebar document={document} />
+                )
+              }
+            />
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-900">
