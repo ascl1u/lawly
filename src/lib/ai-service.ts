@@ -19,95 +19,63 @@ interface AnalysisResult {
 }
 
 interface RiskResponse {
-  severity: string
-  description: string
-  recommendation: string
-}
-
-function validateRisks(risks: RiskResponse[]): AnalysisResult['risks'] {
-  return risks.map(risk => ({
-    severity: (['low', 'medium', 'high'].includes(risk?.severity?.toLowerCase?.())
-      ? risk.severity.toLowerCase()
-      : 'medium') as 'low' | 'medium' | 'high',
-    description: risk?.description || 'Risk description not provided',
-    recommendation: risk?.recommendation || 'Consult legal expert'
-  }))
-}
-
-function extractJSON(text: string): RiskResponse[] {
-  try {
-    const jsonStart = text.indexOf('[')
-    const jsonEnd = text.lastIndexOf(']') + 1
-    if (jsonStart === -1 || jsonEnd === 0) throw new Error('No JSON array found')
-    return JSON.parse(text.slice(jsonStart, jsonEnd))
-  } catch (error) {
-    console.error('JSON extraction failed:', text, error)
-    throw new Error('Failed to extract valid JSON')
-  }
+  severity: string;
+  description: string;
+  recommendation: string;
 }
 
 export async function analyzeDocument(text: string): Promise<AnalysisResult> {
-  console.log('=== AI ANALYSIS START ===')
-  console.time('total-ai-time')
-
-  const model = genAI.getGenerativeModel({ 
-    model: 'gemini-pro',
-    generationConfig: { temperature: 0.2 }
-  })
-
-  const summaryPrompt = `Provide a concise summary of this legal document in 2-3 paragraphs: ${text}`
+  const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
   
-  const risksPrompt = `Analyze this legal document and list key risks.
-Output MUST be a valid JSON array with EXACTLY this structure:
-[
-  {
-    "severity": "low|medium|high",
-    "description": "1-2 sentence risk explanation",
-    "recommendation": "1-2 sentence mitigation steps"
-  }
-]
-Document: ${text}
-Respond ONLY with the JSON array, no other text.`
+  // First, get the summary
+  const summaryResult = await model.generateContent(
+    `Act as a legal advocate for someone reviewing this document. Provide a 3-paragraph summary that:
+    1. First paragraph: Explain the core purpose of this document in plain language
+    2. Second paragraph: Highlight the 3 most important obligations for the signing party
+    3. Third paragraph: List any immediate deadlines or serious consequences
+    Write conversationally, avoiding legal jargon. Document: ${text}`
+  )
+  
+  // Then, get the risks
+  const risksResult = await model.generateContent(
+    `Analyze this agreement from the perspective of someone being asked to sign it and list the key risks. For each risk, provide:
+    - Severity (must be exactly "low", "medium", or "high")
+    - Description (brief explanation of the risk)
+    - Recommendation (how to address it)
+    Output MUST be a valid JSON array with EXACTLY this structure:
+    [
+      {
+        "severity": "low|medium|high",
+        "description": "1-2 sentence risk explanation",
+        "recommendation": "1-2 sentence mitigation steps"
+      }
+    ]
+    Document: ${text}
+    Respond ONLY with the JSON array, no other text.`
+  )
+  
+  // Finally, get simplified text
+  const simplifiedResult = await model.generateContent(
+    `Rewrite this legal document section as if explaining it to a friend:
+    1. Start with "This basically means..."
+    2. Use a real-life analogy
+    3. Highlight what's unusual about this clause
+    4. End with "Watch out for..." 
+    Original text: ${text}`
+  )
 
-  const simplifiedPrompt = `Explain this legal document in simple, plain language, avoiding legal jargon: ${text}`
+  const summary = summaryResult.response.text()
+  const risks = JSON.parse(risksResult.response.text())
+  const simplifiedText = simplifiedResult.response.text()
 
-  try {
-    // Run all AI tasks in parallel
-    const [summaryResult, risksResult, simplifiedResult] = await Promise.all([
-      model.generateContent(summaryPrompt),
-      model.generateContent(risksPrompt),
-      model.generateContent(simplifiedPrompt)
-    ])
-
-    // Process results
-    const summary = summaryResult.response.text().trim()
-    const risksText = risksResult.response.text().trim()
-    const simplifiedText = simplifiedResult.response.text().trim()
-
-    let risks: AnalysisResult['risks'] = []
-    try {
-      const parsedRisks = extractJSON(risksText)
-      risks = validateRisks(parsedRisks)
-    } catch (error) {
-      console.error('Risk parsing failed:', error)
-      risks = []
-    }
-
-    console.timeEnd('total-ai-time')
-    console.log('=== AI ANALYSIS COMPLETE ===')
-    return {
-      summary,
-      risks,
-      simplifiedText
-    }
-  } catch (error) {
-    console.timeEnd('total-ai-time')
-    console.error('=== AI ANALYSIS FAILED ===', {
-      error,
-      type: typeof error,
-      message: error instanceof Error ? error.message : 'Unknown error'
-    })
-    throw error
+  return {
+    summary,
+    risks: risks.map((risk: RiskResponse) => ({
+      severity: risk.severity.toLowerCase() as 'low' | 'medium' | 'high',
+      description: risk.description,
+      recommendation: risk.recommendation
+    })),
+    simplifiedText
   }
 }
 
@@ -118,12 +86,12 @@ export async function generateChatResponse(
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
     
-    const prompt = `You are a legal assistant. Using only the context of this legal document, answer the following question.
-    If you cannot answer based solely on the document content, say so.
+    const prompt = `You're helping someone review a contract they're nervous about signing. 
+    Answer their question strictly using the document text below. If unclear:
+    - Explain why the document doesn't address this
+    - Suggest 3 questions they should ask the other party
 
-    Document content:
-    ${documentContent}
-
+    Document: ${documentContent}
     Question: ${question}
     `
 
