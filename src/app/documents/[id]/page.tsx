@@ -25,6 +25,7 @@ export default function DocumentPage() {
   const [isDeleted, setIsDeleted] = useState(false)
   const router = useRouter()
   const [jobId, setJobId] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
     let pollingInterval: NodeJS.Timeout
@@ -65,36 +66,37 @@ export default function DocumentPage() {
           throw error
         }
 
-        // Set jobId for any non-analyzed status
-        if (document.status !== 'analyzed') {
+        // Only set jobId if document is being processed
+        if (document.status !== 'analyzed' && document.status !== 'pending') {
           setJobId(`doc:${document.id}`)
-          setDocument(document)
-          setLoading(false)
-          return false
+          setIsProcessing(true)
         }
 
-        // Fetch analysis data if document is analyzed
-        const [summaryResult, risksResult, messagesResult] = await Promise.all([
-          supabase.from('summaries').select('*').eq('document_id', id).single(),
-          supabase.from('risk_analyses').select('*').eq('document_id', id),
-          supabase.from('messages').select('*').eq('document_id', id).order('created_at', { ascending: true })
-        ])
+        if (document.status === 'analyzed') {
+          // Fetch analysis data if document is analyzed
+          const [summaryResult, risksResult] = await Promise.all([
+            supabase.from('summaries').select('*').eq('document_id', id).single(),
+            supabase.from('risk_analyses').select('*').eq('document_id', id)
+          ])
 
-        setDocument({
-          ...document,
-          summary: {
-            summary_text: summaryResult.data?.summary_text || null,
-            simplified_text: summaryResult.data?.simplified_text || null
-          },
-          risks: risksResult.data?.map(risk => ({
-            risk_severity: risk.risk_severity,
-            risk_description: risk.risk_description,
-            suggested_action: risk.suggested_action
-          })) || [],
-          messages: messagesResult.data || []
-        })
+          setDocument({
+            ...document,
+            summary: {
+              summary_text: summaryResult.data?.summary_text || null,
+              simplified_text: summaryResult.data?.simplified_text || null
+            },
+            risks: risksResult.data?.map(risk => ({
+              risk_severity: risk.risk_severity,
+              risk_description: risk.risk_description,
+              suggested_action: risk.suggested_action
+            })) || []
+          })
+        } else {
+          setDocument(document)
+        }
+
         setLoading(false)
-        return true
+        return document.status === 'analyzed'
       } catch (e) {
         console.error('Error fetching document:', e)
         setError(e instanceof Error ? e.message : 'Failed to load document')
@@ -198,7 +200,38 @@ export default function DocumentPage() {
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-900">
             <div className="text-center text-gray-400">
-              <p>Please wait while we analyze your document...</p>
+              <p className="mb-4">
+                {isProcessing ? 'Please wait while we analyze your document...' : 'Document uploaded. Click analyze to begin processing.'}
+              </p>
+              {!isProcessing && document.status === 'pending' && (
+                <button
+                  onClick={async () => {
+                    setIsProcessing(true)
+                    try {
+                      const response = await fetch('/api/process-document', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ documentId: id })
+                      })
+                      
+                      if (!response.ok) {
+                        throw new Error('Failed to start analysis')
+                      }
+                      
+                      // Wait for the status to be updated before setting jobId
+                      await new Promise(resolve => setTimeout(resolve, 1000))
+                      setJobId(`doc:${id}`)
+                    } catch (error) {
+                      console.error('Error starting analysis:', error)
+                      setError('Failed to start analysis')
+                      setIsProcessing(false)
+                    }
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                >
+                  Analyze Document
+                </button>
+              )}
             </div>
           </div>
         )}
