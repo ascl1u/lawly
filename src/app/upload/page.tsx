@@ -93,13 +93,14 @@ export default function UploadPage() {
           upsert: false
         })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError)
+        throw new Error(uploadError.message)
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath)
-
-      console.log('Generated public URL:', publicUrl)
 
       const { error: dbError } = await supabase
         .from('documents')
@@ -115,14 +116,17 @@ export default function UploadPage() {
         .select()
         .single()
 
-      if (dbError) throw dbError
+      if (dbError) {
+        console.error('Database insert error:', dbError)
+        throw new Error(dbError.message)
+      }
 
       setDocumentId(documentId)
       setFileStatus('uploaded')
     } catch (error) {
       console.error('Upload error:', error)
       setFileStatus('error')
-      setUploadError(error instanceof Error ? error.message : 'Failed to upload file')
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload file. Please try again.')
     }
   }
 

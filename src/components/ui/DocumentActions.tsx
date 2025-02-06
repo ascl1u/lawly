@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
 
 interface DocumentActionsProps {
-  onDelete: () => Promise<void>
+  onDelete: () => void
+  status: 'pending' | 'parsing' | 'analyzed' | 'error'
+  onAnalyze?: () => void
 }
 
-export function DocumentActions({ onDelete }: DocumentActionsProps) {
+export function DocumentActions({ onDelete, status, onAnalyze }: DocumentActionsProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -29,6 +32,16 @@ export function DocumentActions({ onDelete }: DocumentActionsProps) {
     }
   }
 
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true)
+    try {
+      await onAnalyze?.()
+    } finally {
+      setIsAnalyzing(false)
+      setIsOpen(false)
+    }
+  }
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -45,6 +58,18 @@ export function DocumentActions({ onDelete }: DocumentActionsProps) {
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-gray-700 ring-1 ring-black ring-opacity-5">
+          {status === 'pending' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleAnalyze()
+              }}
+              disabled={isAnalyzing}
+              className="block w-full text-left px-4 py-2 text-sm text-blue-400 hover:bg-gray-600 disabled:opacity-50 border-b border-gray-600"
+            >
+              {isAnalyzing ? 'Analyzing...' : 'Analyze Document'}
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation()

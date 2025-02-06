@@ -118,7 +118,22 @@ export default function DocumentsPage() {
                 </div>
               </div>
             </button>
-            <DocumentActions onDelete={() => handleDelete(doc)} />
+            <DocumentActions 
+              onDelete={() => handleDelete(doc)} 
+              status={doc.status}
+              onAnalyze={async () => {
+                try {
+                  await fetch('/api/process-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ documentId: doc.id })
+                  })
+                  router.push(`/documents/${doc.id}?processing=true`)
+                } catch (error) {
+                  console.error('Error starting analysis:', error)
+                }
+              }}
+            />
           </div>
         </li>
       ))}
