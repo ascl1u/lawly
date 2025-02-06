@@ -36,6 +36,8 @@ export default function DocumentPage() {
       const job = await response.json()
       console.log('📊 Poll result:', job)
       
+      if (!job) return false
+      
       if (job.status === 'failed') {
         console.error('❌ Job failed:', job.error)
         setError(job.error || 'Processing failed')
@@ -67,6 +69,7 @@ export default function DocumentPage() {
         if (document.status !== 'analyzed') {
           setJobId(`doc:${document.id}`)
           setDocument(document)
+          setLoading(false)
           return false
         }
 
@@ -90,14 +93,13 @@ export default function DocumentPage() {
           })) || [],
           messages: messagesResult.data || []
         })
-
+        setLoading(false)
         return true
       } catch (e) {
         console.error('Error fetching document:', e)
         setError(e instanceof Error ? e.message : 'Failed to load document')
-        return true
-      } finally {
         setLoading(false)
+        return true
       }
     }
 

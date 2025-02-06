@@ -5,7 +5,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Container } from '@/components/ui/Container'
-import { Card, CardHeader } from '@/components/ui/Card'
+import { Card, CardHeader, CardSection } from '@/components/ui/Card'
 import { DocumentActions } from '@/components/ui/DocumentActions'
 
 interface DocumentItem {
@@ -69,6 +69,9 @@ export default function DocumentsPage() {
     }
   }
 
+  const analyzedDocuments = documents.filter(doc => doc.status === 'analyzed')
+  const pendingDocuments = documents.filter(doc => doc.status !== 'analyzed')
+
   if (authLoading || loading) {
     return (
       <Container>
@@ -90,6 +93,38 @@ export default function DocumentsPage() {
     )
   }
 
+  const DocumentList = ({ docs }: { docs: DocumentItem[] }) => (
+    <ul className="divide-y divide-gray-700">
+      {docs.map((doc) => (
+        <li key={doc.id} className="hover:bg-gray-700">
+          <div className="flex items-center justify-between px-4 py-4 sm:px-6">
+            <button
+              onClick={() => router.push(`/documents/${doc.id}`)}
+              className="flex-1 text-left"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-blue-400 truncate">
+                  {doc.file_name}
+                </p>
+                <div className="flex items-center gap-4">
+                  {doc.status !== 'analyzed' && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-yellow-900/20 text-yellow-200">
+                      {doc.status}
+                    </span>
+                  )}
+                  <p className="text-sm text-gray-300">
+                    {new Date(doc.uploaded_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </button>
+            <DocumentActions onDelete={() => handleDelete(doc)} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+
   return (
     <Container>
       <Card>
@@ -109,28 +144,19 @@ export default function DocumentsPage() {
               </button>
             </div>
           ) : (
-            <ul className="divide-y divide-gray-700">
-              {documents.map((doc) => (
-                <li key={doc.id} className="hover:bg-gray-700">
-                  <div className="flex items-center justify-between px-4 py-4 sm:px-6">
-                    <button
-                      onClick={() => router.push(`/documents/${doc.id}`)}
-                      className="flex-1 text-left"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-blue-400 truncate">
-                          {doc.file_name}
-                        </p>
-                        <p className="text-sm text-gray-300">
-                          {new Date(doc.uploaded_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </button>
-                    <DocumentActions onDelete={() => handleDelete(doc)} />
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="divide-y divide-gray-700">
+              {pendingDocuments.length > 0 && (
+                <CardSection title="Pending Analysis" className="text-gray-100">
+                  <DocumentList docs={pendingDocuments} />
+                </CardSection>
+              )}
+              
+              {analyzedDocuments.length > 0 && (
+                <CardSection title="Analyzed Documents" className="text-gray-100">
+                  <DocumentList docs={analyzedDocuments} />
+                </CardSection>
+              )}
+            </div>
           )}
         </div>
       </Card>
