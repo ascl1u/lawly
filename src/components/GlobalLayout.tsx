@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { FileText, Upload, Menu, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -12,14 +12,40 @@ interface GlobalLayoutProps {
 }
 
 export function GlobalLayout({ children }: GlobalLayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    // Initialize from localStorage if available
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('sidebarOpen')
+      return stored ? stored === 'true' : true
+    }
+    return true
+  })
+  
   const router = useRouter()
+  const pathname = usePathname()
   const { user } = useAuth()
   const supabase = createClientComponentClient()
+
+  // Persist sidebar state to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarOpen', isSidebarOpen.toString())
+  }, [isSidebarOpen])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     router.push('/')
+  }
+
+  const handleNavigation = (href: string) => {
+    if (!user) {
+      if (href === '/documents') {
+        router.push('/auth/login?redirect=/documents')
+      } else {
+        router.push('/auth/login')
+      }
+    } else {
+      router.push(href)
+    }
   }
 
   const navigationItems = [
@@ -35,8 +61,10 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
     },
   ]
 
-  // Only show sidebar for authenticated routes
-  if (!user || window.location.pathname === '/' || window.location.pathname.startsWith('/auth/')) {
+  // Only hide sidebar for auth pages
+  const isAuthPage = pathname.startsWith('/auth/')
+
+  if (isAuthPage) {
     return (
       <div className="min-h-screen flex flex-col">
         <nav className="bg-gray-800 shadow-sm">
@@ -80,7 +108,7 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
           {navigationItems.map((item) => (
             <button
               key={item.href}
-              onClick={() => router.push(item.href)}
+              onClick={() => handleNavigation(item.href)}
               className="w-full p-4 flex items-center justify-center text-gray-400 hover:bg-gray-700"
             >
               <item.icon className="w-6 h-6" />
@@ -89,13 +117,15 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
           ))}
         </nav>
 
-        <button
-          onClick={handleSignOut}
-          className="w-full p-4 flex items-center justify-center text-red-400 hover:bg-gray-700 mt-auto"
-        >
-          <LogOut className="w-6 h-6" />
-          {isSidebarOpen && <span className="ml-4">Sign Out</span>}
-        </button>
+        {user && (
+          <button
+            onClick={handleSignOut}
+            className="w-full p-4 flex items-center justify-center text-red-400 hover:bg-gray-700 mt-auto"
+          >
+            <LogOut className="w-6 h-6" />
+            {isSidebarOpen && <span className="ml-4">Sign Out</span>}
+          </button>
+        )}
       </div>
 
       <main className={`flex-1 ${isSidebarOpen ? 'ml-64' : 'ml-16'} transition-all duration-300`}>
