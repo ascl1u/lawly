@@ -18,8 +18,8 @@ export function RiskSidebar({ document }: RiskSidebarProps) {
   const severityOrder = ['high', 'medium', 'low']
 
   return (
-    <div className="h-full bg-gray-900">
-      <Card className="h-full rounded-none border-l border-gray-700 bg-gray-900">
+    <div className="h-full">
+      <Card className="h-full rounded-none border-l border-gray-700">
         <CardHeader 
           title="Risk Analysis" 
           subtitle={`${document.risks?.length || 0} risks identified`}

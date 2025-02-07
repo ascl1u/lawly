@@ -38,7 +38,7 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
   // Only show sidebar for authenticated routes
   if (!user || window.location.pathname === '/' || window.location.pathname.startsWith('/auth/')) {
     return (
-      <>
+      <div className="min-h-screen flex flex-col">
         <nav className="bg-gray-800 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16 items-center">
@@ -46,18 +46,33 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
             </div>
           </div>
         </nav>
-        {children}
-      </>
+        <main className="flex-1">
+          {children}
+        </main>
+      </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-gray-900">
-      <div className={`${isSidebarOpen ? 'w-64' : 'w-16'} bg-gray-800 transition-all duration-300`}>
+    <div className="flex min-h-screen">
+      <div className={`
+        ${isSidebarOpen ? 'w-64' : 'w-16'} 
+        min-w-[4rem] 
+        bg-gray-800 
+        transition-all 
+        duration-300 
+        flex 
+        flex-col
+        fixed 
+        h-screen
+      `}>
         <div className="p-4">
-          <Logo />
+          {isSidebarOpen ? <Logo /> : null}
         </div>
-        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-4 hover:bg-gray-700">
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+          className="p-4 hover:bg-gray-700 flex justify-center"
+        >
           <Menu className="w-6 h-6 text-gray-400" />
         </button>
         
@@ -66,7 +81,7 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
             <button
               key={item.href}
               onClick={() => router.push(item.href)}
-              className="w-full p-4 flex items-center text-gray-400 hover:bg-gray-700"
+              className="w-full p-4 flex items-center justify-center text-gray-400 hover:bg-gray-700"
             >
               <item.icon className="w-6 h-6" />
               {isSidebarOpen && <span className="ml-4">{item.label}</span>}
@@ -76,16 +91,16 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
 
         <button
           onClick={handleSignOut}
-          className="w-full p-4 flex items-center text-red-400 hover:bg-gray-700"
+          className="w-full p-4 flex items-center justify-center text-red-400 hover:bg-gray-700 mt-auto"
         >
           <LogOut className="w-6 h-6" />
           {isSidebarOpen && <span className="ml-4">Sign Out</span>}
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <main className={`flex-1 ${isSidebarOpen ? 'ml-64' : 'ml-16'} transition-all duration-300`}>
         {children}
-      </div>
+      </main>
     </div>
   )
 }

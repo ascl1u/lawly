@@ -7,8 +7,8 @@ interface SummarySidebarProps {
 
 export function SummarySidebar({ document }: SummarySidebarProps) {
   return (
-    <div className="h-full bg-gray-900">
-      <Card className="h-full rounded-none border-l border-gray-700 bg-gray-900">
+    <div className="h-full">
+      <Card className="h-full rounded-none border-l border-gray-700">
         <CardHeader 
           title="Document Summary" 
           subtitle="AI-generated analysis"

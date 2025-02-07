@@ -57,7 +57,7 @@ export function ResizableLayout({
       {/* Main content wrapper */}
       <div className="flex-1 flex">
         {/* Document content with scroll */}
-        <div className="flex-1 overflow-auto bg-gray-900">
+        <div className="flex-1 overflow-auto">
           {mainContent}
         </div>
         
@@ -72,7 +72,7 @@ export function ResizableLayout({
 
       {/* Sidebar */}
       <div 
-        className="h-full overflow-auto bg-gray-900"
+        className="h-full overflow-auto"
         style={{ width: sidebarWidth }}
       >
         {sidebarContent}
