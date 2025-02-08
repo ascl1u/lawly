@@ -18,17 +18,6 @@ export default function UploadPage() {
   const [documentId, setDocumentId] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
-  const handleSignOut = async () => {
-    console.log('Signing out...')
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      console.error('Error signing out:', error)
-    } else {
-      console.log('Signed out successfully')
-      router.push('/')
-    }
-  }
-
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -166,12 +155,6 @@ export default function UploadPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Upload Document</h1>
-        <button
-          onClick={handleSignOut}
-          className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
-        >
-          Sign Out
-        </button>
       </div>
       
       <div className="bg-gray-800 shadow sm:rounded-lg p-8">
