@@ -1,45 +1,55 @@
 'use client'
 
-import React from 'react'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import Link from 'next/link'
 
-export default function SignupPage() {
-  const router = useRouter()
+function SignUpForm() {
   const supabase = createClientComponentClient()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/upload'
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | React.ReactNode | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      console.log('Checking for existing user with email:', email)
+      const { error: checkError } = await supabase.auth.resetPasswordForEmail(email)
+
+      // If no error occurs, the email exists
+      if (!checkError) {
+        console.log('Account exists, preventing signup')
+        setError('An account with this email already exists')
+        setLoading(false)
+        return
+      }
+
+      console.log('No existing user found, proceeding with signup')
+      const { error: signUpError, data: signUpData } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-        },
+          emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${redirectTo}`
+        }
       })
 
-      if (error) throw error
+      console.log('Signup attempt result:', { signUpError, signUpData })
 
-      if (data.user) {
-        setSuccess(true)
-        setTimeout(() => {
-          router.push('/auth/login')
-        }, 3000)
-      }
+      if (signUpError) throw signUpError
+
+      // Show verification message
+      setError('Please check your email to verify your account')
     } catch (e) {
       console.error('Signup error:', e)
-      setError(e instanceof Error ? e.message : 'An error occurred')
+      setError(e instanceof Error ? e.message : 'An error occurred during sign up')
     } finally {
       setLoading(false)
     }
@@ -50,75 +60,71 @@ export default function SignupPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Create a new account
+            Create your account
           </h2>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSignup}>
+        <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
               <input
-                id="email"
-                name="email"
                 type="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-gray-800"
+                placeholder="Email address"
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
               <input
-                id="password"
-                name="password"
                 type="password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-gray-800"
+                placeholder="Password"
               />
             </div>
           </div>
 
           {error && (
-            <div className="text-red-400 text-sm text-center">
+            <div className={`text-sm text-center ${error.includes('already exists') ? 'text-yellow-400' : error.includes('check your email') ? 'text-green-400' : 'text-red-400'}`}>
               {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="text-green-500 text-sm text-center">
-              Please check your email to verify your account. Redirecting to login...
+              {error.includes('already exists') && (
+                <div className="mt-2">
+                  <Link href="/auth/login" className="text-blue-400 hover:text-blue-300">
+                    Sign in instead
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
           <div>
             <button
               type="submit"
-              disabled={loading || success}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {loading ? 'Creating account...' : 'Create account'}
+              {loading ? 'Creating account...' : 'Sign up'}
             </button>
           </div>
-        </form>
 
-        <div className="text-sm text-center text-gray-300">
-          <p>
-            Already have an account?{' '}
-            <Link href="/auth/login" className="text-blue-400 hover:text-blue-300">
-              Sign in
+          <div className="text-center">
+            <Link href="/auth/login" className="text-sm text-blue-400 hover:text-blue-300">
+              Already have an account? Sign in
             </Link>
-          </p>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignUpForm />
+    </Suspense>
   )
 } 
