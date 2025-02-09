@@ -6,6 +6,7 @@ import { FileText, Upload, Menu, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import Logo from './Logo'
+import { Footer } from './Footer'
 
 interface GlobalLayoutProps {
   children: React.ReactNode
@@ -66,7 +67,7 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
 
   if (isAuthPage) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="flex flex-col min-h-screen">
         <nav className="bg-gray-800 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16 items-center">
@@ -77,60 +78,65 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
         <main className="flex-1">
           {children}
         </main>
+        <Footer />
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen">
-      <div className={`
-        ${isSidebarOpen ? 'w-64' : 'w-16'} 
-        min-w-[4rem] 
-        bg-gray-800 
-        transition-all 
-        duration-300 
-        flex 
-        flex-col
-        fixed 
-        h-screen
-      `}>
-        <div className="p-4">
-          {isSidebarOpen ? <Logo /> : null}
-        </div>
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-          className="p-4 hover:bg-gray-700 flex justify-center"
-        >
-          <Menu className="w-6 h-6 text-gray-400" />
-        </button>
-        
-        <nav className="flex-1 pt-4">
-          {navigationItems.map((item) => (
-            <button
-              key={item.href}
-              onClick={() => handleNavigation(item.href)}
-              className="w-full p-4 flex items-center justify-center text-gray-400 hover:bg-gray-700"
-            >
-              <item.icon className="w-6 h-6" />
-              {isSidebarOpen && <span className="ml-4">{item.label}</span>}
-            </button>
-          ))}
-        </nav>
-
-        {user && (
-          <button
-            onClick={handleSignOut}
-            className="w-full p-4 flex items-center justify-center text-red-400 hover:bg-gray-700 mt-auto"
+    <div className="flex flex-col min-h-screen">
+      <div className="flex flex-1">
+        <div className={`
+          ${isSidebarOpen ? 'w-64' : 'w-16'} 
+          min-w-[4rem] 
+          bg-gray-800 
+          transition-all 
+          duration-300 
+          flex 
+          flex-col
+          fixed 
+          h-screen
+        `}>
+          <div className="p-4">
+            {isSidebarOpen ? <Logo /> : null}
+          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+            className="p-4 hover:bg-gray-700 flex justify-center"
           >
-            <LogOut className="w-6 h-6" />
-            {isSidebarOpen && <span className="ml-4">Sign Out</span>}
+            <Menu className="w-6 h-6 text-gray-400" />
           </button>
-        )}
-      </div>
+          
+          <nav className="flex-1 pt-4">
+            {navigationItems.map((item) => (
+              <button
+                key={item.href}
+                onClick={() => handleNavigation(item.href)}
+                className="w-full p-4 flex items-center justify-center text-gray-400 hover:bg-gray-700"
+              >
+                <item.icon className="w-6 h-6" />
+                {isSidebarOpen && <span className="ml-4">{item.label}</span>}
+              </button>
+            ))}
+          </nav>
 
-      <main className={`flex-1 ${isSidebarOpen ? 'ml-64' : 'ml-16'} transition-all duration-300`}>
-        {children}
-      </main>
+          {user && (
+            <button
+              onClick={handleSignOut}
+              className="w-full p-4 flex items-center justify-center text-red-400 hover:bg-gray-700 mt-auto"
+            >
+              <LogOut className="w-6 h-6" />
+              {isSidebarOpen && <span className="ml-4">Sign Out</span>}
+            </button>
+          )}
+        </div>
+        <main className={`flex-1 ${isSidebarOpen ? 'ml-64' : 'ml-16'} transition-all duration-300`}>
+          {children}
+        </main>
+      </div>
+      <footer className={`${isSidebarOpen ? 'ml-64' : 'ml-16'} transition-all duration-300`}>
+        <Footer />
+      </footer>
     </div>
   )
 }
