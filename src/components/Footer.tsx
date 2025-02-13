@@ -22,7 +22,7 @@ export function Footer() {
               © {new Date().getFullYear()} Lawly. All rights reserved.
             </span>
             <a 
-              href="https://twitter.com/lawly_ai" 
+              href="https://x.com/dingusmage" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-white"
