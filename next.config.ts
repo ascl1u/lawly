@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-
+import path from 'path';
 const nextConfig: NextConfig = {
   experimental: {
     turbo: {
@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
       ...config.resolve,
       alias: {
         ...config.resolve.alias,
-        '@': './src',
+        '@': path.join(process.cwd(), 'src'),
       },
       extensionAlias: {
         '.js': ['.js', '.ts', '.tsx']

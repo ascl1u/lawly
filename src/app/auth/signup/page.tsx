@@ -3,33 +3,16 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import Link from 'next/link'
-import { useForm } from 'react-hook-form'
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-
-interface FormValues {
-  email: string
-  password: string
-}
+import { AuthForm } from '@/components/auth/auth-form'
 
 function SignUpForm() {
   const supabase = createClientComponentClient()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect') || '/upload'
-  const [error, setError] = useState<string | undefined>(undefined)
+  const [error, setError] = useState<string>()
   const [loading, setLoading] = useState(false)
 
-  const form = useForm<FormValues>({
-    defaultValues: {
-      email: '',
-      password: ''
-    }
-  })
-
-  const onSubmit = async (values: FormValues) => {
+  const handleSubmit = async (values: { email: string; password: string }) => {
     setError(undefined)
     setLoading(true)
 
@@ -38,7 +21,6 @@ function SignUpForm() {
 
       if (!checkError) {
         setError('An account with this email already exists')
-        setLoading(false)
         return
       }
 
@@ -60,84 +42,18 @@ function SignUpForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md space-y-8 p-8">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>
-          <p className="text-sm text-muted-foreground">
-            Enter your email to create an account
-          </p>
-        </div>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="name@example.com"
-                      autoComplete="email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      autoComplete="new-password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {error && (
-              <div className="text-sm text-red-500">{error}</div>
-            )}
-
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={loading}
-            >
-              {loading ? "Creating account..." : "Create account"}
-            </Button>
-
-            <p className="text-sm text-center text-muted-foreground">
-              Already have an account?{' '}
-              <Link href="/auth/login" className="text-primary hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </form>
-        </Form>
-      </Card>
-    </div>
+    <AuthForm 
+      type="signup" 
+      onSubmit={handleSubmit} 
+      error={error}
+      loading={loading}
+    />
   )
 }
 
-export default function Page() {
+export default function SignUpPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse">Loading...</div>
-    </div>}>
+    <Suspense fallback={<div>Loading...</div>}>
       <SignUpForm />
     </Suspense>
   )
