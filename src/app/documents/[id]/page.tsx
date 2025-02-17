@@ -4,15 +4,17 @@ import { useAuth } from '@/hooks/useAuth'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Container } from '@/components/ui/Container'
+import { Container } from '@/components/ui/container'
 import { DocumentDetails } from '@/types'
-import { DocumentViewer } from '@/components/DocumentViewer'
-import { RiskSidebar } from '@/components/RiskSidebar'
-import { SidebarToggle } from '@/components/ui/SidebarToggle'
-import { SummarySidebar } from '@/components/SummarySidebar'
-import { ChatSidebar } from '@/components/ChatSidebar'
-import { ProgressBar } from '@/components/ProgressBar'
-import { ResizableLayout } from '@/components/ResizableLayout'
+import { DocumentViewer } from '@/components/document-viewer'
+import { RiskSidebar } from '@/components/risk-sidebar'
+import { SidebarToggle } from '@/components/sidebar-toggle'
+import { SummarySidebar } from '@/components/summary-sidebar'
+import { ChatSidebar } from '@/components/chat-sidebar'
+import { Progress } from '@/components/progress-bar'
+import { ResizableLayout } from '@/components/resizable-layout'
+import { DocumentOutline } from '@/components/document-outline'
+// import { Button } from '@/components/ui/button'
 
 export default function DocumentPage() {
   const { id } = useParams()
@@ -26,6 +28,7 @@ export default function DocumentPage() {
   const router = useRouter()
   const [jobId, setJobId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  // const [showOutline, setShowOutline] = useState(true)
 
   useEffect(() => {
     let pollingInterval: NodeJS.Timeout
@@ -49,14 +52,26 @@ export default function DocumentPage() {
     }
 
     const fetchDocument = async () => {
-      if (!user || isDeleted) return true
+      console.log('DocumentPage: Fetching document with state:', {
+        userId: user?.id,
+        isDeleted,
+        documentId: id
+      });
+
+      if (!user || isDeleted) return true;
 
       try {
         const { data: document, error } = await supabase
           .from('documents')
           .select('*')
           .eq('id', id)
-          .single()
+          .single();
+
+        console.log('DocumentPage: Fetch result:', {
+          hasError: !!error,
+          documentData: document,
+          errorCode: error?.code
+        });
 
         if (error) {
           if (error.code === 'PGRST116') {
@@ -65,6 +80,8 @@ export default function DocumentPage() {
           }
           throw error
         }
+
+        console.log('Fetched document:', document)
 
         // Only set jobId if document is being processed
         if (document.status !== 'analyzed' && document.status !== 'pending') {
@@ -156,6 +173,8 @@ export default function DocumentPage() {
 
   if (!document) return null
 
+  console.log('Document data:', document);
+
   return (
     <Container className="h-[calc(100vh-4rem)]">
       <div className="h-full flex flex-col">
@@ -175,7 +194,7 @@ export default function DocumentPage() {
             </div>
             {document.status !== 'analyzed' && (
               <div className="mt-6">
-                <ProgressBar status={document.status} />
+                <Progress status={document.status} />
               </div>
             )}
           </div>
@@ -185,7 +204,16 @@ export default function DocumentPage() {
         {document.status === 'analyzed' ? (
           <div className="flex-1 overflow-hidden">
             <ResizableLayout
-              mainContent={<DocumentViewer document={document} />}
+              mainContent={
+                <div className="flex h-full">
+                  <div className="w-64 border-r border-gray-700">
+                    <DocumentOutline document={document} />
+                  </div>
+                  <div className="flex-1">
+                    <DocumentViewer document={document} />
+                  </div>
+                </div>
+              }
               sidebarContent={
                 activeView === 'risks' ? (
                   <RiskSidebar document={document} />

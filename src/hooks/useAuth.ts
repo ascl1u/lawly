@@ -10,7 +10,13 @@ export function useAuth() {
   const supabase = createClientComponentClient()
 
   useEffect(() => {
+    console.log('useAuth: Initializing auth state')
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('useAuth: Session state:', {
+        hasSession: !!session,
+        userId: session?.user?.id
+      })
       setUser(session?.user ?? null)
       setLoading(false)
     })

@@ -37,10 +37,14 @@ Intuitive design for easy document uploads and navigation.
 Highlighted annotations for identified risks and key clauses.
 Responsive design for both desktop and mobile platforms.
 
-TODO:
+DONE:
 
 Move document processing to a background job service
 Design: Client Uploads -> API -> Worker -> Client Polls
 Job Queue: Upstash Redis
 Job Status Storage: Supabase jobs table
 Notifications: Client polling
+
+TODO:
+
+change to shadcn/ui for a modern and professional look

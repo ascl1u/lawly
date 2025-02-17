@@ -4,9 +4,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Container } from '@/components/ui/Container'
-import { Card, CardHeader, CardSection } from '@/components/ui/Card'
-import { DocumentActions } from '@/components/ui/DocumentActions'
+import { Container } from '@/components/ui/container'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { DocumentActions } from '@/components/document-actions'
 
 interface DocumentItem {
   id: string
@@ -142,38 +142,42 @@ export default function DocumentsPage() {
 
   return (
     <Container>
-      <Card>
-        <CardHeader 
-          title="My Documents" 
-          subtitle={`${documents.length} document${documents.length === 1 ? '' : 's'}`} 
-        />
-        <div className="border-t border-gray-700">
-          {documents.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-300">No documents yet</p>
-              <button
-                onClick={() => router.push('/upload')}
-                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                Upload your first document
-              </button>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-700">
-              {pendingDocuments.length > 0 && (
-                <CardSection title="Pending Analysis" className="text-gray-100">
-                  <DocumentList docs={pendingDocuments} />
-                </CardSection>
-              )}
-              
-              {analyzedDocuments.length > 0 && (
-                <CardSection title="Analyzed Documents" className="text-gray-100">
-                  <DocumentList docs={analyzedDocuments} />
-                </CardSection>
-              )}
-            </div>
-          )}
-        </div>
+      <Card className="bg-gray-900 border-gray-700">
+        <CardHeader className="border-b border-gray-700">
+          <CardTitle className="text-gray-100">My Documents</CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          <div className="border-t border-gray-700">
+            {documents.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-300">No documents yet</p>
+                <button
+                  onClick={() => router.push('/upload')}
+                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Upload your first document
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-700">
+                {pendingDocuments.length > 0 && (
+                  <div className="py-6">
+                    <h3 className="text-lg font-semibold text-gray-100 mb-4">Pending Analysis</h3>
+                    <DocumentList docs={pendingDocuments} />
+                  </div>
+                )}
+                
+                {analyzedDocuments.length > 0 && (
+                  <div className="py-6">
+                    <h3 className="text-lg font-semibold text-gray-100 mb-4">Analyzed Documents</h3>
+                    <DocumentList docs={analyzedDocuments} />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
       </Card>
     </Container>
   )

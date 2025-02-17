@@ -1,9 +1,13 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import Link from 'next/link'
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 function LoginForm() {
   const supabase = createClientComponentClient()
@@ -12,12 +16,12 @@ function LoginForm() {
   
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
+    setError(undefined)
     setLoading(true)
 
     try {
@@ -29,7 +33,6 @@ function LoginForm() {
       if (error) throw error
       window.location.href = redirectTo
     } catch (e) {
-      console.error('Login error:', e)
       setError(e instanceof Error ? e.message : 'An error occurred')
     } finally {
       setLoading(false)
@@ -37,81 +40,77 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Sign in to your account
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="text-red-400 text-sm text-center">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
-        </form>
-
-        <div className="text-sm text-center text-gray-300">
-          <p>
-            Don&apos;t have an account?{' '}
-            <Link href="/auth/signup" className="text-blue-400 hover:text-blue-300">
-              Sign up
-            </Link>
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-md space-y-8 p-8">
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+          <p className="text-sm text-muted-foreground">
+            Enter your credentials to sign in
           </p>
         </div>
-      </div>
+
+        <Form onSubmit={handleLogin} className="space-y-4">
+          <FormField
+            name="email"
+            value={email}
+            error={error}
+            onChange={setEmail}
+          >
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+
+          <FormField
+            name="password"
+            value={password}
+            error={error}
+            onChange={setPassword}
+          >
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={loading}
+          >
+            {loading ? "Signing in..." : "Sign in"}
+          </Button>
+        </Form>
+
+        <div className="text-center text-sm">
+          <Link 
+            href="/auth/signup" 
+            className="text-primary hover:text-primary/90"
+          >
+            Don&apos;t have an account? Sign up
+          </Link>
+        </div>
+      </Card>
     </div>
   )
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <LoginForm />
-    </Suspense>
-  )
+  return <LoginForm />
 } 

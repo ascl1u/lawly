@@ -1,6 +1,6 @@
 'use client'
 
-import { PolicyContainer } from '@/components/ui/PolicyContainer'
+import { PolicyContainer } from '@/components/policy-container'
 
 export default function PrivacyPolicy() {
   return (
