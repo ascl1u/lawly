@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Container } from '@/components/ui/container'
+import { Container } from '@/components/container'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { DocumentActions } from '@/components/document-actions'
 

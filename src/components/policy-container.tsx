@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { Container } from "@/components/ui/container"
+import { Container } from "@/components/container"
 
 interface PolicyContainerProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string

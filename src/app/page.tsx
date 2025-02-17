@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { Container } from '@/components/ui/container'
+import { Container } from '@/components/container'
 import { Button } from "@/components/ui/button"
 import { Features } from "@/components/features"
 import { Testimonials } from "@/components/testimonials"
