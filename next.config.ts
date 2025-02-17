@@ -1,26 +1,29 @@
 import type { NextConfig } from "next";
 import path from 'path';
+
 const nextConfig: NextConfig = {
-  experimental: {
-    turbo: {
-      rules: {
-        '*.worker.min.js': {
-          loaders: ['raw-loader'],
-          as: '*.js'
-        }
-      }
-    }
-  },
+  // experimental: {
+  //   turbo: {
+  //     rules: {
+  //       '*.worker.min.js': {
+  //         loaders: ['raw-loader'],
+  //         as: '*.js'
+  //       }
+  //     }
+  //   }
+  // },
   webpack: (config) => {
+    // Preserve the existing aliases
+    const existingAlias = config.resolve?.alias || {};
+    
     config.resolve = {
       ...config.resolve,
       alias: {
-        ...config.resolve.alias,
-        '@': path.join(process.cwd(), 'src'),
+        ...existingAlias,
+        '@': path.join(process.cwd(), './src'),
       },
-      extensionAlias: {
-        '.js': ['.js', '.ts', '.tsx']
-      }
+      // Ensure case sensitivity is enforced
+      symlinks: false
     }
     return config
   }
