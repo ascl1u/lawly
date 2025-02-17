@@ -10,6 +10,19 @@ const nextConfig: NextConfig = {
         }
       }
     }
+  },
+  webpack: (config) => {
+    config.resolve = {
+      ...config.resolve,
+      alias: {
+        ...config.resolve.alias,
+        '@': './src',
+      },
+      extensionAlias: {
+        '.js': ['.js', '.ts', '.tsx']
+      }
+    }
+    return config
   }
 };
 
