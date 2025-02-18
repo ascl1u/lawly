@@ -7,8 +7,8 @@ const nextConfig: NextConfig = {
       ...config.resolve,
       alias: {
         ...config.resolve?.alias,
-        '@': path.join(__dirname, 'src').replace(/\\/g, '/'),
-      }
+        '@': path.join(process.cwd(), 'src').replace(/\\/g, '/'),
+      }      
     }
     return config
   }
