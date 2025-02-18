@@ -13,7 +13,7 @@ import { SummarySidebar } from '@/components/summary-sidebar'
 import { ChatSidebar } from '@/components/chat-sidebar'
 import { Progress } from '@/components/progress-bar'
 import { ResizableLayout } from '@/components/resizable-layout'
-import { DocumentOutline } from '@/components/document-outline'
+// import { DocumentOutline } from '@/components/document-outline'
 import { Switch } from "@/components/ui/switch"
 // import { Button } from '@/components/ui/button'
 
