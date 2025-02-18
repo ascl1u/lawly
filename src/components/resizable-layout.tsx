@@ -53,14 +53,14 @@ const ResizableLayout = React.forwardRef<HTMLDivElement, ResizableLayoutProps>(
     return (
       <div 
         ref={ref}
-        className={cn("flex h-full relative select-none", className)}
+        className={cn("flex h-full relative", className)}
         onMouseMove={resize}
         onMouseUp={stopResizing}
         onMouseLeave={stopResizing}
         {...props}
       >
-        <div className="flex-1 flex">
-          <div className="flex-1 overflow-auto">
+        <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1">
             {mainContent}
           </div>
           
@@ -79,7 +79,9 @@ const ResizableLayout = React.forwardRef<HTMLDivElement, ResizableLayoutProps>(
           className="h-full overflow-auto"
           style={{ width: sidebarWidth }}
         >
-          {sidebarContent}
+          <div className="h-full overflow-y-auto">
+            {sidebarContent}
+          </div>
         </div>
       </div>
     )

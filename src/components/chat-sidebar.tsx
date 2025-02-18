@@ -6,7 +6,7 @@ import {
   CardDescription, 
   CardContent 
 } from '@/components/ui/card'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,29 @@ export function ChatSidebar({ document }: ChatSidebarProps) {
   const supabase = createClientComponentClient()
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [messages, setMessages] = useState(document.messages || [])
+
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!user || !document.id) return
+
+      const { data, error } = await supabase
+        .from('messages')
+        .select('id, content, role, created_at')
+        .eq('document_id', document.id)
+        .order('created_at', { ascending: true })
+
+      if (error) {
+        console.error('Error loading messages:', error)
+        return
+      }
+
+      setMessages(data)
+      document.messages = data
+    }
+
+    loadMessages()
+  }, [user, document, supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -69,7 +92,7 @@ export function ChatSidebar({ document }: ChatSidebarProps) {
       if (aiMessageError) throw aiMessageError
 
       // Refresh messages
-      const { data: messages, error: messagesError } = await supabase
+      const { data: newMessages, error: messagesError } = await supabase
         .from('messages')
         .select('id, content, role, created_at')
         .eq('document_id', document.id)
@@ -77,7 +100,8 @@ export function ChatSidebar({ document }: ChatSidebarProps) {
 
       if (messagesError) throw messagesError
 
-      document.messages = messages
+      setMessages(newMessages)
+      document.messages = newMessages
     } catch (e) {
       console.error('Error sending message:', e)
     } finally {
@@ -87,46 +111,54 @@ export function ChatSidebar({ document }: ChatSidebarProps) {
   }
 
   return (
-    <div className="h-full">
-      <Card className="h-full">
+    <div className="h-full flex flex-col">
+      <Card className="flex-1 flex flex-col">
         <CardHeader>
           <CardTitle>Document Chat</CardTitle>
           <CardDescription>Ask questions about this document</CardDescription>
         </CardHeader>
         
-        <CardContent className="space-y-6">
-          <form onSubmit={handleSubmit}>
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Ask a question..."
-                disabled={loading}
-              />
-              <Button
-                type="submit"
-                disabled={loading || !message.trim()}
-                size="default"
-              >
-                {loading ? 'Sending...' : 'Send'}
-              </Button>
-            </div>
-          </form>
-
-          <div className="space-y-4">
-            {document.messages?.map((msg) => (
+        <CardContent className="flex-1 flex flex-col">
+          <div className="flex-1 space-y-4 overflow-y-auto">
+            {messages.map((msg) => (
               <div 
                 key={msg.id} 
-                className={`rounded-md p-4 border ${
+                className={`flex ${
                   msg.role === 'user' 
-                    ? 'bg-primary/10' 
-                    : 'bg-muted'
+                    ? 'justify-end' 
+                    : 'w-full'
                 }`}
               >
-                <p className="text-sm">{msg.content}</p>
+                <div className={`${
+                  msg.role === 'user'
+                    ? 'bg-primary/10 rounded-lg p-3 max-w-[80%]'
+                    : 'text-sm text-gray-200 pr-4'
+                }`}>
+                  {msg.content}
+                </div>
               </div>
             ))}
+          </div>
+
+          <div className="pt-4 border-t mt-auto">
+            <form onSubmit={handleSubmit}>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Ask a question..."
+                  disabled={loading}
+                />
+                <Button
+                  type="submit"
+                  disabled={loading || !message.trim()}
+                  size="default"
+                >
+                  {loading ? 'Sending...' : 'Send'}
+                </Button>
+              </div>
+            </form>
           </div>
         </CardContent>
       </Card>

@@ -14,6 +14,7 @@ import { ChatSidebar } from '@/components/chat-sidebar'
 import { Progress } from '@/components/progress-bar'
 import { ResizableLayout } from '@/components/resizable-layout'
 import { DocumentOutline } from '@/components/document-outline'
+import { Switch } from "@/components/ui/switch"
 // import { Button } from '@/components/ui/button'
 
 export default function DocumentPage() {
@@ -28,6 +29,7 @@ export default function DocumentPage() {
   const router = useRouter()
   const [jobId, setJobId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showDocument, setShowDocument] = useState(true)
   // const [showOutline, setShowOutline] = useState(true)
 
   useEffect(() => {
@@ -189,7 +191,19 @@ export default function DocumentPage() {
                 </p>
               </div>
               {document.status === 'analyzed' && (
-                <SidebarToggle activeView={activeView} onToggle={setActiveView} />
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={showDocument}
+                      onCheckedChange={setShowDocument}
+                      id="show-document"
+                    />
+                    <label htmlFor="show-document" className="text-sm text-gray-300">
+                      Show Document
+                    </label>
+                  </div>
+                  <SidebarToggle activeView={activeView} onToggle={setActiveView} />
+                </div>
               )}
             </div>
             {document.status !== 'analyzed' && (
@@ -203,27 +217,36 @@ export default function DocumentPage() {
         {/* Main Content */}
         {document.status === 'analyzed' ? (
           <div className="flex-1 overflow-hidden">
-            <ResizableLayout
-              mainContent={
-                <div className="flex h-full">
-                  <div className="w-64 border-r border-gray-700">
-                    <DocumentOutline document={document} />
-                  </div>
-                  <div className="flex-1">
+            {showDocument ? (
+              <ResizableLayout
+                mainContent={
+                  <div className="h-full overflow-hidden">
                     <DocumentViewer document={document} />
                   </div>
-                </div>
-              }
-              sidebarContent={
-                activeView === 'risks' ? (
+                }
+                sidebarContent={
+                  <div className="h-full overflow-y-auto">
+                    {activeView === 'risks' ? (
+                      <RiskSidebar document={document} />
+                    ) : activeView === 'summary' ? (
+                      <SummarySidebar document={document} />
+                    ) : (
+                      <ChatSidebar document={document} />
+                    )}
+                  </div>
+                }
+              />
+            ) : (
+              <div className="h-full">
+                {activeView === 'risks' ? (
                   <RiskSidebar document={document} />
                 ) : activeView === 'summary' ? (
                   <SummarySidebar document={document} />
                 ) : (
                   <ChatSidebar document={document} />
-                )
-              }
-            />
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-900">
