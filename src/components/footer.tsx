@@ -10,7 +10,7 @@ const Footer = React.forwardRef<
   return (
     <footer
       ref={ref}
-      className={cn("bg-gray-900 py-6", className)}
+      className={cn("bg-gray-800 py-6", className)}
       {...props}
     >
       <div className="container py-3">

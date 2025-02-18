@@ -1,142 +1,75 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import { FileText, Upload, Menu, LogOut } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { FileText, Upload, Menu } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { Footer } from '@/components/footer'
+import { UserAvatarMenu } from '@/components/user-avatar-menu'
+import Link from 'next/link'
 
-interface GlobalLayoutProps {
-  children: React.ReactNode
-}
-
-export function GlobalLayout({ children }: GlobalLayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const router = useRouter()
+export function GlobalLayout({ children }: { children: React.ReactNode }) {
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const pathname = usePathname()
-  const { user } = useAuth()
-  const supabase = createClientComponentClient()
+  const hideNavigation = pathname.startsWith('/auth/') || pathname === '/'
+  const hideFooter = pathname.startsWith('/auth/') || pathname.includes('/documents/')
 
-  // Initialize from localStorage after mount
-  useEffect(() => {
-    const stored = localStorage.getItem('sidebarOpen')
-    if (stored !== null) {
-      setIsSidebarOpen(stored === 'true')
-    }
-  }, [])
-
-  // Persist sidebar state to localStorage
-  useEffect(() => {
-    localStorage.setItem('sidebarOpen', isSidebarOpen.toString())
-  }, [isSidebarOpen])
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
-  const handleNavigation = (href: string) => {
-    if (!user) {
-      if (href === '/documents') {
-        router.push('/auth/login?redirect=/documents')
-      } else {
-        router.push('/auth/login')
-      }
-    } else {
-      router.push(href)
-    }
-  }
-
-  const navigationItems = [
-    {
-      label: 'My Documents',
-      icon: FileText,
-      href: '/documents',
-    },
-    {
-      label: 'Upload Document',
-      icon: Upload,
-      href: '/upload',
-    },
-  ]
-
-  // Only hide sidebar for auth pages
-  const isAuthPage = pathname.startsWith('/auth/')
-
-  if (isAuthPage) {
+  if (hideNavigation) {
     return (
-      <div className="flex flex-col min-h-screen">
-        <nav className="bg-gray-900 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16 items-center">
-              <Logo />
-            </div>
+      <div className="h-full flex flex-col">
+        <main className="flex-1 flex flex-col justify-center">
+          <div className="flex-1 flex flex-col justify-center">
+            {children}
           </div>
-        </nav>
-        <main className="flex-1">
-          {children}
+          {!hideFooter && <Footer />}
         </main>
-        <Footer />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="h-full flex flex-col">
       <div className="flex flex-1">
-        <div className={`
-          ${isSidebarOpen ? 'w-64' : 'w-16'} 
-          min-w-[4rem] 
-          bg-gray-800 
-          transition-all 
-          duration-300 
-          flex 
-          flex-col
-          fixed 
-          h-screen
-        `}>
-          <div className="p-4">
-            {isSidebarOpen ? <Logo /> : null}
-          </div>
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-            className="p-4 hover:bg-gray-700 flex justify-center"
-          >
-            <Menu className="w-6 h-6 text-gray-400" />
-          </button>
-          
-          <nav className="flex-1 pt-4">
-            {navigationItems.map((item) => (
-              <button
-                key={item.href}
-                onClick={() => handleNavigation(item.href)}
-                className="w-full p-4 flex items-center justify-center text-gray-400 hover:bg-gray-700"
-              >
-                <item.icon className="w-6 h-6" />
-                {isSidebarOpen && <span className="ml-4">{item.label}</span>}
-              </button>
-            ))}
-          </nav>
-
-          {user && (
+        <aside
+          className={`${
+            sidebarOpen ? 'w-64' : 'w-16'
+          } bg-gray-800 text-white transition-all duration-300 flex flex-col`}
+        >
+          <nav className="flex-1 p-4">
             <button
-              onClick={handleSignOut}
-              className="w-full p-4 flex items-center justify-center text-red-400 hover:bg-gray-700 mt-auto"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="mb-4 p-2 hover:bg-gray-700 rounded-lg w-full flex items-center"
             >
-              <LogOut className="w-6 h-6" />
-              {isSidebarOpen && <span className="ml-4">Sign Out</span>}
+              <Menu className="h-5 w-5 min-w-[20px]" />
+              {sidebarOpen && <span className="ml-2">Toggle Menu</span>}
             </button>
-          )}
+            <Link
+              href="/documents"
+              className="mb-2 p-2 hover:bg-gray-700 rounded-lg flex items-center"
+            >
+              <FileText className="h-5 w-5 min-w-[20px]" />
+              {sidebarOpen && <span className="ml-2">Documents</span>}
+            </Link>
+            <Link
+              href="/upload"
+              className="p-2 hover:bg-gray-700 rounded-lg flex items-center"
+            >
+              <Upload className="h-5 w-5 min-w-[20px]" />
+              {sidebarOpen && <span className="ml-2">Upload</span>}
+            </Link>
+          </nav>
+        </aside>
+        <div className="flex-1 flex flex-col">
+          <header className="bg-gray-800 text-white p-4 border-b border-gray-700">
+            <div className="flex justify-between items-center">
+              <Logo />
+              <UserAvatarMenu />
+            </div>
+          </header>
+          <main className="flex-1 overflow-auto p-6">{children}</main>
         </div>
-        <main className={`flex-1 ${isSidebarOpen ? 'ml-64' : 'ml-16'} transition-all duration-300`}>
-          {children}
-        </main>
       </div>
-      <footer className={`${isSidebarOpen ? 'ml-64' : 'ml-16'} transition-all duration-300`}>
-        <Footer />
-      </footer>
+      {!hideFooter && <Footer />}
     </div>
   )
 }

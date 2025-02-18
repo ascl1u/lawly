@@ -1,6 +1,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import { GlobalLayout } from '@/components/global-layout'
+import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -15,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="en" className="h-full" suppressHydrationWarning>
+      <body className={cn(inter.className, "h-full")}>
         <GlobalLayout>{children}</GlobalLayout>
       </body>
     </html>
