@@ -72,21 +72,18 @@ export interface Database {
           id: string
           document_id: string
           summary_text: string | null
-          simplified_text: string | null
           created_at: string
         }
         Insert: {
           id?: string
           document_id: string
           summary_text?: string | null
-          simplified_text?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           document_id?: string
           summary_text?: string | null
-          simplified_text?: string | null
           created_at?: string
         }
       }

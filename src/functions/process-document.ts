@@ -70,7 +70,6 @@ export async function processDocument(documentId: string) {
         id: generateUUID(),
         document_id: documentId,
         summary_text: analysis.summary,
-        simplified_text: analysis.simplifiedText,
         created_at: new Date().toISOString()
       }),
       supabaseAdmin.from('risk_analyses').insert(

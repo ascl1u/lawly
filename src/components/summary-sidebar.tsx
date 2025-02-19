@@ -27,13 +27,6 @@ export function SummarySidebar({ document }: SummarySidebarProps) {
               <p className="text-sm">{document.summary?.summary_text || 'No summary available'}</p>
             </div>
           </div>
-
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Simplified Version</h4>
-            <div className="p-4 rounded-md border bg-card">
-              <p className="text-sm">{document.summary?.simplified_text || 'No simplified version available'}</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -29,12 +29,12 @@ export async function analyzeDocument(text: string): Promise<AnalysisResult> {
   
   // First, get the summary
   const summaryResult = await model.generateContent(
-    `Act as a legal advocate for someone reviewing this document. Provide a 3-paragraph summary that:
-    1. First paragraph: Explain the core purpose of this document in plain language
-    2. Second paragraph: Highlight the 3 most important obligations for the signing party
-    3. Third paragraph: List any immediate deadlines or serious consequences
-    Write conversationally, avoiding legal jargon. Document: ${text}`
-  )
+    `Summarize this document in 3 short paragraphs:
+    1. Purpose: What does this document do?
+    2. Key obligations: List the top 3 responsibilities for the signer.
+    3. Deadlines/consequences: Any urgent actions or risks?
+    Use plain language. Document: ${text}`
+  );
   
   // Then, get the risks
   const risksResult = await model.generateContent(

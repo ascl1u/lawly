@@ -102,7 +102,6 @@ export default function DocumentPage() {
             ...document,
             summary: {
               summary_text: summaryResult.data?.summary_text || null,
-              simplified_text: summaryResult.data?.simplified_text || null
             },
             risks: risksResult.data?.map(risk => ({
               risk_severity: risk.risk_severity,

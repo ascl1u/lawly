@@ -9,7 +9,6 @@ export interface DocumentDetails {
   parsed_at: string | null;
   summary?: {
     summary_text: string | null;
-    simplified_text: string | null;
   };
   risks?: Array<{
     risk_severity: string | null;

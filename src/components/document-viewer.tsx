@@ -117,7 +117,7 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1">
-        <div className="p-6">
+        <div className="p-6 pb-0">
           <Card className="p-4 bg-gray-800">
             {isPdf ? (
               pageContent && (
@@ -137,41 +137,41 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
             )}
           </Card>
         </div>
+        
+        {isPdf && totalPages > 0 && (
+          <div className="px-6 py-4">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <Button 
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Previous
+                  </Button>
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="px-4">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <Button 
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Next
+                  </Button>
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </ScrollArea>
-      
-      {isPdf && totalPages > 0 && (
-        <div className="p-4 border-t border-gray-800">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <Button 
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  size="sm"
-                >
-                  Previous
-                </Button>
-              </PaginationItem>
-              <PaginationItem>
-                <span className="px-4">
-                  Page {currentPage} of {totalPages}
-                </span>
-              </PaginationItem>
-              <PaginationItem>
-                <Button 
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  variant="outline"
-                  size="sm"
-                >
-                  Next
-                </Button>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
     </div>
   );
 }
