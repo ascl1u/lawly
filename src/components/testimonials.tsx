@@ -24,24 +24,34 @@ const testimonials = [
 
 export function Testimonials() {
   return (
-    <div className="py-24 bg-gray-800">
+    <div className="py-24 bg-background">
       <div className="container px-4 md:px-6">
-        <h2 className="text-3xl font-bold text-center text-white mb-12">Trusted by Professionals</h2>
-        <div className="grid gap-8 md:grid-cols-3">
+        <h2 className="text-3xl font-bold text-center text-foreground mb-12">
+          What Our Users Say
+        </h2>
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {testimonials.map((testimonial) => (
-            <Card key={testimonial.name} className="bg-gray-900 border-gray-800">
+            <Card key={testimonial.name} className="bg-primary">
               <CardContent className="p-6">
                 <div className="flex items-start space-x-4">
-                  <Avatar>
+                  <Avatar className="h-10 w-10">
                     <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
-                    <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
+                    <AvatarFallback className="bg-secondary/20 text-secondary">
+                      {testimonial.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <div className="font-semibold text-white">{testimonial.name}</div>
-                    <div className="text-sm text-gray-400">{testimonial.role}</div>
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-primary-foreground">
+                      {testimonial.name}
+                    </h3>
+                    <p className="text-sm text-primary-foreground/80">
+                      {testimonial.role}
+                    </p>
                   </div>
                 </div>
-                <p className="mt-4 text-gray-300">{testimonial.content}</p>
+                <p className="mt-4 text-primary-foreground/80">
+                  {testimonial.content}
+                </p>
               </CardContent>
             </Card>
           ))}

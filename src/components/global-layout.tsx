@@ -7,6 +7,7 @@ import { Logo } from '@/components/logo'
 import { Footer } from '@/components/footer'
 import { UserAvatarMenu } from '@/components/user-avatar-menu'
 import Link from 'next/link'
+import { UpgradeButton } from '@/components/upgrade-button'
 
 export function GlobalLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -63,7 +64,10 @@ export function GlobalLayout({ children }: { children: React.ReactNode }) {
           <header className="bg-gray-800 text-white p-4 border-b border-gray-700">
             <div className="flex justify-between items-center">
               <Logo />
-              <UserAvatarMenu />
+              <div className="flex items-center gap-4">
+                <UpgradeButton />
+                <UserAvatarMenu />
+              </div>
             </div>
           </header>
           <main className="flex-1 overflow-auto p-6">{children}</main>

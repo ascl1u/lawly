@@ -47,4 +47,63 @@ Notifications: Client polling
 
 TODO:
 
-change to shadcn/ui for a modern and professional look
+Color scheme refactor:
+
+Primary Colors:
+Navy Blue (#002366)
+
+Represents trust, authority, and professionalism.
+
+Commonly associated with the legal field (e.g., law firm logos, legal documents).
+
+Works well as a primary color for headers, buttons, and accents.
+
+White (#FFFFFF)
+
+Symbolizes clarity, simplicity, and neutrality.
+
+Ideal for backgrounds and text to ensure readability and a clean, modern look.
+
+Secondary Colors:
+Gold (#FFD700) or Dark Yellow (#FFC72C)
+
+Represents prestige, quality, and success.
+
+Use sparingly for highlights, icons, or call-to-action buttons (e.g., "Upgrade to Pro").
+
+Adds a touch of elegance without overwhelming the design.
+
+Gray (#F5F5F5 for light gray, #333333 for dark gray)
+
+Light gray for subtle backgrounds or dividers.
+
+Dark gray for secondary text or less prominent elements.
+
+Maintains a professional and balanced look.
+
+Accent Colors:
+Forest Green (#228B22) or Emerald Green (#008000)
+
+Represents growth, stability, and reliability.
+
+Use for secondary buttons, success messages, or progress indicators.
+
+Burgundy (#800020) or Deep Red (#8B0000)
+
+Adds a touch of sophistication and seriousness.
+
+Use for warnings, errors, or important notifications.
+
+Color Scheme Summary:
+Primary: Navy Blue (#002366), White (#FFFFFF)
+
+Secondary: Gold (#FFD700), Gray (#F5F5F5, #333333)
+
+Accent: Forest Green (#228B22), Burgundy (#800020)
+
+Stripe Integration
+
+Pricing Model:
+Free Tier: Limited analyses (1 document per month), use older llm model
+Pro Tier (20$/month): More analyses (30 documents per month), SOTA llm model
+Pay-As-You-Go (1$/analysis): Pay for each document you analyze, SOTA llm model
