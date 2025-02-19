@@ -14,9 +14,9 @@ interface SubscriptionDetails {
 }
 
 export function SubscriptionStatus() {
-  const { user } = useAuth()
+  // const { user } = useAuth()
   const [loading, setLoading] = useState(false)
-  const [subscription, setSubscription] = useState<SubscriptionDetails>({
+  const [subscription, ] = useState<SubscriptionDetails>({ //setSubscription
     tier: 'free',
     documentsUsed: 0,
     documentsLimit: 1
