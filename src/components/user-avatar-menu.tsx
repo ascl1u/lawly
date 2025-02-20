@@ -16,8 +16,18 @@ export function UserAvatarMenu() {
   const supabase = createClientComponentClient()
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      // Force a router refresh to update auth state
+      router.refresh()
+      
+      // Navigate to home page
+      router.push('/')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   return (
