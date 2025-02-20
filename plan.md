@@ -107,3 +107,10 @@ Pricing Model:
 Free Tier: Limited analyses (1 document per month), use older llm model
 Pro Tier (20$/month): More analyses (30 documents per month), SOTA llm model
 Pay-As-You-Go (1$/analysis): Pay for each document you analyze, SOTA llm model
+
+Then, plan the migration to @supabase/ssr in this order:
+a. Update auth middleware (typescript:middleware.ts startLine: 1 endLine: 16)
+b. Update server-side utils (typescript:src/lib/supabase-server.ts startLine: 1 endLine: 8)
+c. Update client components (typescript:src/components/user-avatar-menu.tsx startLine: 1 endLine: 72)
+d. Update auth hooks (typescript:src/hooks/useAuth.ts startLine: 1 endLine: 33)
+e. Update auth routes (typescript:src/app/auth/callback/route.ts startLine: 1 endLine: 44)
