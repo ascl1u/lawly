@@ -57,7 +57,7 @@ export function DocumentActions({ onDelete, status, onAnalyze }: DocumentActions
           <DropdownMenuItem
             onClick={handleAnalyze}
             disabled={isAnalyzing}
-            className="text-blue-400"
+            className="text-accent hover:text-accent hover:bg-accent/10"
           >
             {isAnalyzing ? 'Analyzing...' : 'Analyze Document'}
           </DropdownMenuItem>
@@ -65,7 +65,7 @@ export function DocumentActions({ onDelete, status, onAnalyze }: DocumentActions
         <DropdownMenuItem
           onClick={handleDelete}
           disabled={isDeleting}
-          className="text-red-400"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
         >
           {isDeleting ? 'Deleting...' : 'Delete Document'}
         </DropdownMenuItem>

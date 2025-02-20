@@ -1,7 +1,7 @@
 import { DocumentDetails } from "@/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import * as pdfjsLib from "pdfjs-dist";
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -118,42 +118,45 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1">
         <div className="p-6 pb-0">
-          <Card className="p-4 bg-gray-800">
-            {isPdf ? (
-              pageContent && (
-                <Image
-                  src={pageContent}
-                  alt={`Page ${currentPage}`}
-                  width={800}
-                  height={1200}
-                  className="w-full h-auto"
-                  unoptimized
-                />
-              )
-            ) : (
-              <div className="prose prose-invert max-w-none whitespace-pre-wrap">
-                {pageContent}
-              </div>
-            )}
+          <Card className="overflow-hidden bg-primary border-primary/20">
+            <CardContent className="p-4">
+              {isPdf ? (
+                pageContent && (
+                  <Image
+                    src={pageContent}
+                    alt={`Page ${currentPage}`}
+                    width={800}
+                    height={1200}
+                    className="w-full h-auto"
+                    unoptimized
+                  />
+                )
+              ) : (
+                <div className="prose prose-primary max-w-none whitespace-pre-wrap">
+                  {pageContent}
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
         
         {isPdf && totalPages > 0 && (
-          <div className="px-6 py-4">
+          <div className="px-6 py-4 flex justify-center">
             <Pagination>
-              <PaginationContent>
+              <PaginationContent className="bg-primary rounded-lg p-1">
                 <PaginationItem>
                   <Button 
                     onClick={handlePrevPage}
                     disabled={currentPage === 1}
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
+                    className="text-primary-foreground hover:bg-primary-foreground/10 disabled:text-primary-foreground/50"
                   >
                     Previous
                   </Button>
                 </PaginationItem>
                 <PaginationItem>
-                  <span className="px-4">
+                  <span className="px-4 text-primary-foreground">
                     Page {currentPage} of {totalPages}
                   </span>
                 </PaginationItem>
@@ -161,8 +164,9 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
                   <Button 
                     onClick={handleNextPage}
                     disabled={currentPage === totalPages}
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
+                    className="text-primary-foreground hover:bg-primary-foreground/10 disabled:text-primary-foreground/50"
                   >
                     Next
                   </Button>

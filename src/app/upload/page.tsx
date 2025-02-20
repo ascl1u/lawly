@@ -59,9 +59,10 @@ export default function UploadPage() {
     ]
     console.log('File type:', file.type)
     if (!validTypes.includes(file.type)) {
-      alert('Please upload a PDF, Word, or text file')
+      setUploadError('Please upload a PDF, Word, or text file')
       return false
     }
+    setUploadError(null)
     return true
   }
 
@@ -142,8 +143,8 @@ export default function UploadPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-2xl font-semibold mb-2">Loading...</div>
-          <div className="text-gray-500">Please wait while we verify your session</div>
+          <div className="text-2xl font-semibold text-foreground mb-2">Loading...</div>
+          <div className="text-muted-foreground">Please wait while we verify your session</div>
         </div>
       </div>
     )
@@ -154,15 +155,15 @@ export default function UploadPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Upload Document</h1>
+        <h1 className="text-2xl font-bold text-foreground">Upload Document</h1>
       </div>
       
-      <div className="bg-gray-800 shadow sm:rounded-lg p-8">
+      <div className="bg-primary shadow-lg sm:rounded-lg p-8">
         <div 
           className={`relative border-2 border-dashed rounded-lg p-12 text-center
-            ${dragActive ? 'border-blue-400 bg-gray-700' : 'border-gray-600'}
-            ${selectedFile ? 'border-green-400 bg-gray-700' : ''}
-            ${fileStatus === 'error' ? 'border-red-400 bg-gray-700' : ''}
+            ${dragActive ? 'border-secondary bg-secondary/10' : 'border-secondary/50'}
+            ${selectedFile ? 'border-accent bg-accent/10' : ''}
+            ${fileStatus === 'error' ? 'border-destructive bg-destructive/10' : ''}
           `}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -178,22 +179,22 @@ export default function UploadPage() {
           />
           
           {selectedFile ? (
-            <div className="text-green-400">
+            <div className="text-accent">
               <p className="text-lg font-semibold">{selectedFile.name}</p>
               <p className="text-sm">Ready to analyze</p>
             </div>
           ) : (
             <>
-              <p className="text-lg font-semibold text-gray-200">
+              <p className="text-lg font-semibold text-primary-foreground">
                 Drag and drop your document here, or
               </p>
               <label
                 htmlFor="file-upload"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                className="inline-flex items-center px-4 py-2 mt-2 border border-transparent text-base font-medium rounded-md shadow-sm bg-secondary text-secondary-foreground hover:bg-secondary/90 cursor-pointer"
               >
                 Browse files
               </label>
-              <p className="text-sm text-gray-300 mt-2">
+              <p className="text-sm text-primary-foreground/80 mt-2">
                 Supported formats: PDF, Word, or plain text
               </p>
             </>
@@ -201,7 +202,7 @@ export default function UploadPage() {
         </div>
 
         {uploadError && (
-          <div className="mt-4 text-red-600 text-center">
+          <div className="mt-4 text-destructive text-center">
             {uploadError}
           </div>
         )}
@@ -210,17 +211,17 @@ export default function UploadPage() {
           <div className="mt-6 flex justify-center space-x-4">
             {fileStatus !== 'uploaded' && (
               <button
-                className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white
+                className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm
                   ${fileStatus === 'uploading' 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-blue-600 hover:bg-blue-700'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed' 
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
                   }`}
                 onClick={handleUpload}
                 disabled={fileStatus === 'uploading'}
               >
                 {fileStatus === 'uploading' ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -232,7 +233,7 @@ export default function UploadPage() {
 
             {fileStatus === 'uploaded' && (
               <button
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-accent-foreground bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
               >

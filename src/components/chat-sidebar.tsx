@@ -3,14 +3,15 @@ import {
   Card, 
   CardHeader, 
   CardTitle, 
-  CardDescription, 
   CardContent 
 } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useAuth } from '@/hooks/useAuth'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { cn } from '@/lib/utils'
 
 interface ChatSidebarProps {
   document: DocumentDetails
@@ -102,8 +103,8 @@ export function ChatSidebar({ document }: ChatSidebarProps) {
 
       setMessages(newMessages)
       document.messages = newMessages
-    } catch (e) {
-      console.error('Error sending message:', e)
+    } catch (error) {
+      console.error('Error sending message:', error)
     } finally {
       setMessage('')
       setLoading(false)
@@ -111,57 +112,55 @@ export function ChatSidebar({ document }: ChatSidebarProps) {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <Card className="flex-1 flex flex-col">
-        <CardHeader>
-          <CardTitle>Document Chat</CardTitle>
-          <CardDescription>Ask questions about this document</CardDescription>
-        </CardHeader>
-        
-        <CardContent className="flex-1 flex flex-col">
-          <div className="flex-1 space-y-4 overflow-y-auto">
+    <Card className="h-full bg-primary border-primary/20">
+      <CardHeader className="border-b border-primary/20">
+        <CardTitle className="text-primary-foreground">Document Chat</CardTitle>
+        <p className="text-sm text-primary-foreground/60">Ask questions about this document</p>
+      </CardHeader>
+      <CardContent className="p-0 flex flex-col h-[calc(100vh-16rem)]">
+        <ScrollArea className="flex-1">
+          <div className="p-6 space-y-4">
             {messages.map((msg) => (
               <div 
                 key={msg.id} 
-                className={`flex ${
-                  msg.role === 'user' 
-                    ? 'justify-end' 
-                    : 'w-full'
-                }`}
+                className={cn(
+                  "flex",
+                  msg.role === 'user' ? "justify-end" : "justify-start"
+                )}
               >
-                <div className={`${
-                  msg.role === 'user'
-                    ? 'bg-primary/10 rounded-lg p-3 max-w-[80%]'
-                    : 'text-sm text-gray-200 pr-4'
-                }`}>
+                <div className={cn(
+                  "max-w-[80%] rounded-lg p-3",
+                  msg.role === 'user' 
+                    ? "bg-secondary text-primary"
+                    : "bg-white text-primary"
+                )}>
                   {msg.content}
                 </div>
               </div>
             ))}
           </div>
-
-          <div className="pt-4 border-t mt-auto">
-            <form onSubmit={handleSubmit}>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Ask a question..."
-                  disabled={loading}
-                />
-                <Button
-                  type="submit"
-                  disabled={loading || !message.trim()}
-                  size="default"
-                >
-                  {loading ? 'Sending...' : 'Send'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </ScrollArea>
+        
+        <div className="p-4 border-t border-primary/20">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Ask a question..."
+              className="bg-white text-primary"
+              disabled={loading}
+            />
+            <Button
+              type="submit"
+              disabled={loading || !message.trim()}
+              variant="secondary"
+            >
+              {loading ? 'Sending...' : 'Send'}
+            </Button>
+          </form>
+        </div>
+      </CardContent>
+    </Card>
   )
 } 

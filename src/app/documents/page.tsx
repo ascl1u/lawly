@@ -75,8 +75,11 @@ export default function DocumentsPage() {
   if (authLoading || loading) {
     return (
       <Container>
-        <div className="text-center">
-          <div className="text-2xl font-semibold mb-2">Loading...</div>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-2xl font-semibold text-foreground mb-2">Loading...</div>
+            <div className="text-muted-foreground">Please wait while we fetch your documents</div>
+          </div>
         </div>
       </Container>
     )
@@ -85,34 +88,36 @@ export default function DocumentsPage() {
   if (error) {
     return (
       <Container>
-        <div className="text-center text-red-600">
-          <div className="text-2xl font-semibold mb-2">Error</div>
-          <div>{error}</div>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-2xl font-semibold text-destructive mb-2">Error</div>
+            <div className="text-destructive/80">{error}</div>
+          </div>
         </div>
       </Container>
     )
   }
 
   const DocumentList = ({ docs }: { docs: DocumentItem[] }) => (
-    <ul className="divide-y divide-gray-700">
+    <ul className="divide-y divide-primary/20">
       {docs.map((doc) => (
-        <li key={doc.id} className="hover:bg-gray-700">
+        <li key={doc.id} className="hover:bg-primary/10">
           <div className="flex items-center justify-between px-4 py-4 sm:px-6">
             <button
               onClick={() => router.push(`/documents/${doc.id}`)}
               className="flex-1 text-left"
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-blue-400 truncate">
+                <p className="text-sm font-medium text-secondary truncate">
                   {doc.file_name}
                 </p>
                 <div className="flex items-center gap-4">
                   {doc.status !== 'analyzed' && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-yellow-900/20 text-yellow-200">
+                    <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent">
                       {doc.status}
                     </span>
                   )}
-                  <p className="text-sm text-gray-300">
+                  <p className="text-sm text-primary-foreground/60">
                     {new Date(doc.uploaded_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -142,35 +147,39 @@ export default function DocumentsPage() {
 
   return (
     <Container>
-      <Card className="bg-gray-900 border-gray-700">
-        <CardHeader className="border-b border-gray-700">
-          <CardTitle className="text-gray-100">My Documents</CardTitle>
+      <Card className="bg-primary border-primary/20">
+        <CardHeader className="border-b border-primary/20">
+          <CardTitle className="text-primary-foreground">My Documents</CardTitle>
         </CardHeader>
 
         <CardContent>
-          <div className="border-t border-gray-700">
+          <div className="border-t border-primary/20">
             {documents.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-300">No documents yet</p>
+                <p className="text-primary-foreground/80">No documents yet</p>
                 <button
                   onClick={() => router.push('/upload')}
-                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/90"
                 >
                   Upload your first document
                 </button>
               </div>
             ) : (
-              <div className="divide-y divide-gray-700">
+              <div className="divide-y divide-primary/20">
                 {pendingDocuments.length > 0 && (
                   <div className="py-6">
-                    <h3 className="text-lg font-semibold text-gray-100 mb-4">Pending Analysis</h3>
+                    <h3 className="text-lg font-semibold text-primary-foreground mb-4">
+                      Pending Analysis
+                    </h3>
                     <DocumentList docs={pendingDocuments} />
                   </div>
                 )}
                 
                 {analyzedDocuments.length > 0 && (
                   <div className="py-6">
-                    <h3 className="text-lg font-semibold text-gray-100 mb-4">Analyzed Documents</h3>
+                    <h3 className="text-lg font-semibold text-primary-foreground mb-4">
+                      Analyzed Documents
+                    </h3>
                     <DocumentList docs={analyzedDocuments} />
                   </div>
                 )}

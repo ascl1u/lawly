@@ -3,9 +3,9 @@ import {
   Card, 
   CardHeader, 
   CardTitle, 
-  CardDescription, 
   CardContent 
 } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface SummarySidebarProps {
   document: DocumentDetails
@@ -13,22 +13,24 @@ interface SummarySidebarProps {
 
 export function SummarySidebar({ document }: SummarySidebarProps) {
   return (
-    <div className="h-full">
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle>Document Summary</CardTitle>
-          <CardDescription>AI-generated analysis</CardDescription>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Summary</h4>
-            <div className="p-4 rounded-md border bg-card">
-              <p className="text-sm">{document.summary?.summary_text || 'No summary available'}</p>
-            </div>
+    <Card className="h-full bg-primary border-primary/20">
+      <CardHeader className="border-b border-primary/20">
+        <CardTitle className="text-primary-foreground">Document Summary</CardTitle>
+        <p className="text-sm text-primary-foreground/60">AI-generated analysis</p>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[calc(100vh-16rem)]">
+          <div className="p-6 space-y-4">
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <p className="text-primary">
+                  {document.summary?.summary_text || 'No summary available'}
+                </p>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   )
 } 
