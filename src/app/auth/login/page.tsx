@@ -1,11 +1,12 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useState, useEffect } from 'react'
 import { AuthForm } from '@/components/auth/auth-form'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 
-function LoginForm() {
+function LoginFormContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, signIn, loading: authLoading } = useAuth()
@@ -44,4 +45,10 @@ function LoginForm() {
   )
 }
 
-export default LoginForm 
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginFormContent />
+    </Suspense>
+  )
+} 
