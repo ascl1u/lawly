@@ -1,10 +1,11 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 
-export default function ConfirmPage() {
+function ConfirmContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
   const searchParams = useSearchParams()
@@ -38,40 +39,22 @@ export default function ConfirmPage() {
   }, [searchParams])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md p-8 text-center">
-        {status === 'loading' && (
-          <div className="space-y-4">
-            <p>Verifying your email...</p>
-          </div>
-        )}
-        
-        {status === 'success' && (
-          <div className="space-y-4">
-            <h1 className="text-2xl font-semibold text-green-600">✓ Verified</h1>
-            <p>{message}</p>
-            <a 
-              href="/auth/login" 
-              className="text-primary hover:underline"
-            >
-              Continue to login
-            </a>
-          </div>
-        )}
+    <Card className="p-6">
+      {status === 'loading' && <p>Verifying your email...</p>}
+      {status === 'success' && <p className="text-green-600">{message}</p>}
+      {status === 'error' && <p className="text-red-600">{message}</p>}
+    </Card>
+  )
+}
 
-        {status === 'error' && (
-          <div className="space-y-4">
-            <h1 className="text-2xl font-semibold text-red-600">× Error</h1>
-            <p className="text-red-500">{message}</p>
-            <a 
-              href="/auth/signup" 
-              className="text-primary hover:underline"
-            >
-              Back to sign up
-            </a>
-          </div>
-        )}
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={
+      <Card className="p-6">
+        <p>Loading...</p>
       </Card>
-    </div>
+    }>
+      <ConfirmContent />
+    </Suspense>
   )
 } 
