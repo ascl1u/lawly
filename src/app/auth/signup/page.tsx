@@ -1,38 +1,30 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthForm } from '@/components/auth/auth-form'
+import { useAuth } from '@/hooks/useAuth'
 
 function SignUpForm() {
-  const supabase = createClientComponentClient()
+  const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || '/upload'
+  const { user, signUp, loading: authLoading } = useAuth()
   const [error, setError] = useState<string>()
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      const redirectTo = searchParams.get('redirect') || '/documents'
+      router.push(redirectTo)
+    }
+  }, [user, router, searchParams])
 
   const handleSubmit = async (values: { email: string; password: string }) => {
     setError(undefined)
     setLoading(true)
 
     try {
-      const { error: checkError } = await supabase.auth.resetPasswordForEmail(values.email)
-
-      if (!checkError) {
-        setError('An account with this email already exists')
-        return
-      }
-
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${redirectTo}`
-        }
-      })
-
-      if (signUpError) throw signUpError
+      await signUp(values.email, values.password)
       setError('Please check your email to verify your account')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An error occurred during sign up')
@@ -46,15 +38,9 @@ function SignUpForm() {
       type="signup" 
       onSubmit={handleSubmit} 
       error={error}
-      loading={loading}
+      loading={loading || authLoading}
     />
   )
 }
 
-export default function SignUpPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SignUpForm />
-    </Suspense>
-  )
-} 
+export default SignUpForm 

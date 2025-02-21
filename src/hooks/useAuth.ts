@@ -1,26 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect, useState, useMemo } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClientComponentClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
-    console.log('useAuth: Initializing auth state')
-    
+    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('useAuth: Session state:', {
-        hasSession: !!session,
-        userId: session?.user?.id
-      })
       setUser(session?.user ?? null)
       setLoading(false)
     })
 
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null)
       setLoading(false)
@@ -28,6 +24,27 @@ export function useAuth() {
 
     return () => subscription.unsubscribe()
   }, [supabase.auth])
-
-  return { user, loading }
+  return {
+    user,
+    loading,
+    supabase,
+    signIn: async (email: string, password: string) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+    },
+    signUp: async (email: string, password: string) => {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+      if (error) throw error
+    },
+    signOut: async () => {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+    }
+  }
 } 

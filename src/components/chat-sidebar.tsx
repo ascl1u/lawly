@@ -1,3 +1,5 @@
+'use client'
+
 import { DocumentDetails } from '@/types'
 import { 
   Card, 
@@ -9,7 +11,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
@@ -18,8 +19,7 @@ interface ChatSidebarProps {
 }
 
 export function ChatSidebar({ document }: ChatSidebarProps) {
-  const { user } = useAuth()
-  const supabase = createClientComponentClient()
+  const { user, supabase } = useAuth()
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [messages, setMessages] = useState(document.messages || [])

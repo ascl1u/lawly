@@ -1,15 +1,13 @@
 'use client'
 
 import { useAuth } from '@/hooks/useAuth'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 type FileStatus = 'idle' | 'uploading' | 'uploaded' | 'error'
 
 export default function UploadPage() {
-  const { user, loading } = useAuth()
-  const supabase = createClientComponentClient()
+  const { user, loading: authLoading, supabase } = useAuth()
   const router = useRouter()
   const [dragActive, setDragActive] = useState(false)
   const [fileStatus, setFileStatus] = useState<FileStatus>('idle')
@@ -139,7 +137,7 @@ export default function UploadPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

@@ -1,7 +1,6 @@
 'use client'
 
 import { useAuth } from '@/hooks/useAuth'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Container } from '@/components/container'
@@ -19,8 +18,7 @@ import { Switch } from "@/components/ui/switch"
 
 export default function DocumentPage() {
   const { id } = useParams()
-  const { user, loading: authLoading } = useAuth()
-  const supabase = createClientComponentClient()
+  const { user, loading: authLoading, supabase } = useAuth()
   const [document, setDocument] = useState<DocumentDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

@@ -12,14 +12,21 @@ export async function POST() {
       { status: 200 }
     )
 
-    // Clear auth cookies from response
-    const cookieNames = ['sb-access-token', 'sb-refresh-token']
+    // Clear all Supabase-related cookies
+    const cookieNames = [
+      'sb-access-token',
+      'sb-refresh-token',
+      'supabase-auth-token'
+    ]
+    
     cookieNames.forEach(name => {
       response.cookies.set({
         name,
         value: '',
         expires: new Date(0),
         path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
       })
     })
 
@@ -27,7 +34,7 @@ export async function POST() {
   } catch (error) {
     console.error('Server-side sign out error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to sign out' },
       { status: 500 }
     )
   }

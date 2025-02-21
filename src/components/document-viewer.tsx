@@ -1,10 +1,11 @@
+'use client'
+
 import { DocumentDetails } from "@/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import * as pdfjsLib from "pdfjs-dist";
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Pagination,
@@ -26,8 +27,7 @@ interface DocumentViewerProps {
 }
 
 export function DocumentViewer({ document: doc }: DocumentViewerProps) {
-  const { user, loading: authLoading } = useAuth();
-  const supabase = createClientComponentClient();
+  const { user, loading: authLoading, supabase } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [pageContent, setPageContent] = useState<string | null>(null);

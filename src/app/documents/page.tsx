@@ -1,9 +1,8 @@
 'use client'
 
-import { useAuth } from '@/hooks/useAuth'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 import { Container } from '@/components/container'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { DocumentActions } from '@/components/document-actions'
@@ -16,17 +15,16 @@ interface DocumentItem {
 }
 
 export default function DocumentsPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, supabase } = useAuth()
   const router = useRouter()
-  const supabase = createClientComponentClient()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchDocuments = async () => {
-      if (!user) return
+    if (!user) return
 
+    const fetchDocuments = async () => {
       try {
         const { data, error } = await supabase
           .from('documents')
