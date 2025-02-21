@@ -28,7 +28,13 @@ function SignUpFormContent() {
       await signUp(values.email, values.password)
       setError('Please check your email to verify your account')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'An error occurred during sign up')
+      const errorMessage = e instanceof Error ? e.message : 'An error occurred during sign up'
+      
+      if (errorMessage.includes('already registered')) {
+        setError(`${errorMessage} Click here to sign in.`)
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setLoading(false)
     }

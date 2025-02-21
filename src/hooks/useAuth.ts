@@ -33,7 +33,6 @@ export function useAuth() {
       if (error) throw error
     },
     signUp: async (email: string, password: string) => {
-      console.log('Initiating signup with redirect to:', `${window.location.origin}/api/auth/callback`)
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -41,8 +40,23 @@ export function useAuth() {
           emailRedirectTo: `${window.location.origin}/api/auth/callback`
         }
       })
-      console.log('Signup response:', error ? 'Error occurred' : 'Success')
-      if (error) throw error
+
+      if (error) {
+        // Handle specific Supabase error codes
+        switch (error.status) {
+          case 400:
+            if (error.message.includes('already registered')) {
+              throw new Error('This email is already registered. Please sign in instead.')
+            }
+            break
+          case 422:
+            throw new Error('Invalid email or password format.')
+            break
+          default:
+            console.error('Signup error:', error)
+            throw new Error('An unexpected error occurred during sign up.')
+        }
+      }
     },
     signOut: async () => {
       const { error } = await supabase.auth.signOut()
