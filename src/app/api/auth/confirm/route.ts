@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
     const supabase = await createClient()
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       type,
       token_hash,
     })
@@ -28,8 +28,26 @@ export async function GET(request: Request) {
       )
     }
 
+    // Create or update user record after successful verification
+    if (data.user) {
+      const { error: upsertError } = await supabase
+        .from('users')
+        .upsert(
+          {
+            id: data.user.id,
+            email: data.user.email,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'id' }
+        )
+
+      if (upsertError) {
+        console.error('User upsert error:', upsertError)
+      }
+    }
+
     return NextResponse.redirect(
-      new URL(`/api/auth/callback?next=${encodeURIComponent('/auth/login')}`, request.url)
+      new URL(`/api/auth/callback?next=${encodeURIComponent('/upload')}`, request.url)
     )
   } catch (error) {
     console.error('Verification error:', error)
