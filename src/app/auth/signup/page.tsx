@@ -25,9 +25,12 @@ function SignUpFormContent() {
     setLoading(true)
 
     try {
+      console.log('Submitting signup form:', values.email)
       await signUp(values.email, values.password)
+      console.log('Signup successful, email verification required')
       setError('Please check your email to verify your account')
     } catch (e) {
+      console.error('Signup error:', e)
       const errorMessage = e instanceof Error ? e.message : 'An error occurred during sign up'
       
       if (errorMessage.includes('already registered')) {

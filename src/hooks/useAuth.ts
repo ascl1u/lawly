@@ -33,13 +33,16 @@ export function useAuth() {
       if (error) throw error
     },
     signUp: async (email: string, password: string) => {
-      const { error } = await supabase.auth.signUp({
+      console.log('Attempting signup for:', email)
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/api/auth/callback`
         }
       })
+
+      console.log('Signup response:', { data, error })
 
       if (error) {
         // Handle specific Supabase error codes
@@ -57,6 +60,14 @@ export function useAuth() {
             throw new Error('An unexpected error occurred during sign up.')
         }
       }
+
+      // Check if the user already exists
+      if (data?.user?.identities?.length === 0) {
+        console.log('User already exists:', data.user)
+        throw new Error('This email is already registered. Please sign in instead.')
+      }
+
+      return { data }
     },
     signOut: async () => {
       const { error } = await supabase.auth.signOut()
