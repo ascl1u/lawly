@@ -33,13 +33,15 @@ export function useAuth() {
       if (error) throw error
     },
     signUp: async (email: string, password: string) => {
+      console.log('Initiating signup with redirect to:', `${window.location.origin}/api/auth/callback`)
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/api/auth/callback`
         }
       })
+      console.log('Signup response:', error ? 'Error occurred' : 'Success')
       if (error) throw error
     },
     signOut: async () => {

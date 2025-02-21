@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  console.log('Middleware processing path:', request.nextUrl.pathname)
+  
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -12,9 +14,12 @@ export async function updateSession(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          const cookies = request.cookies.getAll()
+          console.log('Middleware cookies found:', cookies.length)
+          return cookies
         },
         setAll(cookiesToSet) {
+          console.log('Setting cookies in middleware:', cookiesToSet.length)
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
@@ -42,11 +47,10 @@ export async function updateSession(request: NextRequest) {
   if (
     !user && 
     (protectedPaths.some(path => request.nextUrl.pathname.startsWith(path)) ||
-    (!request.nextUrl.pathname.startsWith('/login') &&
-     !request.nextUrl.pathname.startsWith('/auth')))
+    (!request.nextUrl.pathname.startsWith('/api/auth')))
   ) {
     const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
+    url.pathname = '/api/auth/login'
     return NextResponse.redirect(url)
   }
 
