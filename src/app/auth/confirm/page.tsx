@@ -21,7 +21,7 @@ function ConfirmContent() {
         }
 
         const response = await fetch(
-          `/api/auth/confirm?token_hash=${token_hash}&type=${type}`,
+          `/auth/confirm?token_hash=${token_hash}&type=${type}`,
           { method: 'GET' }
         )
 

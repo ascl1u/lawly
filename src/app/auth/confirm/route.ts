@@ -9,9 +9,8 @@ export async function GET(request: Request) {
     const type = searchParams.get('type') as EmailOtpType | null
 
     if (!token_hash || !type) {
-      return NextResponse.json(
-        { error: 'Missing parameters' },
-        { status: 400 }
+      return NextResponse.redirect(
+        new URL('/auth/login?error=Missing confirmation parameters', request.url)
       )
     }
 
@@ -22,14 +21,20 @@ export async function GET(request: Request) {
       token_hash,
     })
 
-    if (error) throw error
+    if (error) {
+      console.error('OTP verification error:', error)
+      return NextResponse.redirect(
+        new URL(`/auth/login?error=${encodeURIComponent(error.message)}`, request.url)
+      )
+    }
 
-    return NextResponse.json({ message: 'Email verified successfully' })
+    return NextResponse.redirect(
+      new URL(`/api/auth/callback?next=${encodeURIComponent('/auth/login')}`, request.url)
+    )
   } catch (error) {
     console.error('Verification error:', error)
-    return NextResponse.json(
-      { error: 'Failed to verify email' },
-      { status: 500 }
+    return NextResponse.redirect(
+      new URL('/auth/login?error=Failed to verify email', request.url)
     )
   }
 } 

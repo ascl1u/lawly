@@ -38,7 +38,7 @@ export function useAuth() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/confirm`
         }
       })
       console.log('Signup response:', error ? 'Error occurred' : 'Success')
