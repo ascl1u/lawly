@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import { User, AuthError } from '@supabase/supabase-js'
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
@@ -24,50 +24,50 @@ export function useAuth() {
 
     return () => subscription.unsubscribe()
   }, [supabase.auth])
+
+  const handleAuthError = (error: AuthError | Error) => {
+    console.error('Auth error:', error)
+    if (error.message?.includes('already registered')) {
+      throw new Error('This email is already registered. Please sign in instead.')
+    } else if (error.message?.includes('Invalid login')) {
+      throw new Error('Invalid email or password.')
+    } else {
+      throw new Error('An unexpected error occurred. Please try again.')
+    }
+  }
+
   return {
     user,
     loading,
     supabase,
     signIn: async (email: string, password: string) => {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw error
+      } catch (error) {
+        handleAuthError(error instanceof Error ? error : new Error('Unknown error'))
+      }
     },
     signUp: async (email: string, password: string) => {
-      console.log('Attempting signup for:', email)
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`
+          }
+        })
+        if (error) throw error
+        
+        // Check if user already exists
+        if (data?.user?.identities?.length === 0) {
+          throw new Error('This email is already registered. Please sign in instead.')
         }
-      })
-
-      console.log('Signup response:', { data, error })
-
-      if (error) {
-        // Handle specific Supabase error codes
-        switch (error.status) {
-          case 400:
-            if (error.message.includes('already registered')) {
-              throw new Error('This email is already registered. Please sign in instead.')
-            }
-            break
-          case 422:
-            throw new Error('Invalid email or password format.')
-            break
-          default:
-            console.error('Signup error:', error)
-            throw new Error('An unexpected error occurred during sign up.')
-        }
+        
+        return { data }
+      } catch (error) {
+        handleAuthError(error instanceof Error ? error : new Error('Unknown error'))
       }
-
-      // Check if the user already exists
-      if (data?.user?.identities?.length === 0) {
-        console.log('User already exists:', data.user)
-        throw new Error('This email is already registered. Please sign in instead.')
-      }
-
-      return { data }
     },
     signOut: async () => {
       const { error } = await supabase.auth.signOut()

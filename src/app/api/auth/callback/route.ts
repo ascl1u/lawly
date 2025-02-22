@@ -29,15 +29,24 @@ export async function GET(request: Request) {
         throw error
       }
 
-      console.log('Session obtained:', { 
-        userId: session?.user?.id,
-        userEmail: session?.user?.email,
-        hasSession: !!session 
+      // Validate session token
+      const { data: { user: validUser }, error: validationError } = await supabase.auth.getUser(
+        session?.access_token
+      )
+
+      if (validationError || !validUser) {
+        console.error('Session validation error:', validationError)
+        throw new Error('Invalid session token')
+      }
+
+      console.log('Session validated:', { 
+        userId: validUser.id,
+        userEmail: validUser.email
       })
 
       if (!session?.user) {
-        console.error('No user in session after exchange')
-        throw new Error('No user session after code exchange')
+        console.error('No user in session after validation')
+        throw new Error('No user session after validation')
       }
 
       // Create or update user record with logging
