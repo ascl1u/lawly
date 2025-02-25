@@ -5,6 +5,13 @@ import { handleSubscriptionChange, handleInvoiceEvent } from '@/lib/stripe/subsc
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: Request) {
+
+  // Skip during static build analysis
+  if (typeof req === 'undefined') {
+    console.log('Build-time analysis detected, skipping API route execution')
+    return new Response('Build time', { status: 200 })
+  }
+
   try {
     const rawBody = await req.text()
     const signature = (await headers()).get('stripe-signature')

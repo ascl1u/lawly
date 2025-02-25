@@ -4,6 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { auth } from '@/lib/auth/server'
 
 export async function POST(req: Request) {
+  // Skip during static build analysis
+  if (typeof req === 'undefined') {
+    console.log('Build-time analysis detected, skipping API route execution')
+    return new Response('Build time', { status: 200 })
+  }
+  
   try {
     const session = await auth()
     if (!session?.user?.id) {
