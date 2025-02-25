@@ -15,7 +15,6 @@ interface AnalysisResult {
     description: string
     recommendation: string
   }>
-  simplifiedText: string
 }
 
 interface RiskResponse {
@@ -24,8 +23,17 @@ interface RiskResponse {
   recommendation: string;
 }
 
+function cleanJSONResponse(raw: string): string {
+  let cleaned = raw.trim()
+  // Remove code fences if present
+  if (cleaned.startsWith("```") && cleaned.endsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "")
+  }
+  return cleaned
+}
+
 export async function analyzeDocument(text: string): Promise<AnalysisResult> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
   
   // First, get the summary
   const summaryResult = await model.generateContent(
@@ -38,44 +46,41 @@ export async function analyzeDocument(text: string): Promise<AnalysisResult> {
   
   // Then, get the risks
   const risksResult = await model.generateContent(
-    `Analyze this agreement from the perspective of someone being asked to sign it and list the key risks. For each risk, provide:
-    - Severity (must be exactly "low", "medium", or "high")
-    - Description (brief explanation of the risk)
-    - Recommendation (how to address it)
-    Output MUST be a valid JSON array with EXACTLY this structure:
-    [
-      {
-        "severity": "low|medium|high",
-        "description": "1-2 sentence risk explanation",
-        "recommendation": "1-2 sentence mitigation steps"
-      }
-    ]
-    Document: ${text}
-    Respond ONLY with the JSON array, no other text.`
-  )
+    `You are an expert contract reviewer. Analyze the following agreement from the perspective of a signer and identify the key risks. For each risk, return an object with exactly these keys:
+  - "severity": a string that must be exactly "low", "medium", or "high"
+  - "description": a brief 1-2 sentence explanation of the risk
+  - "recommendation": a brief 1-2 sentence suggestion to mitigate the risk
   
-  // Finally, get simplified text
-  const simplifiedResult = await model.generateContent(
-    `Rewrite this legal document section as if explaining it to a friend:
-    1. Start with "This basically means..."
-    2. Use a real-life analogy
-    3. Highlight what's unusual about this clause
-    4. End with "Watch out for..." 
-    Original text: ${text}`
-  )
+  Return your answer as a JSON array containing one or more such objects. 
+  
+  IMPORTANT:
+  - Output ONLY a JSON array. Do not include any additional text, explanation, or markdown formatting.
+  - Do not include triple backticks, code fences, or any other formatting characters.
+  - The output must be exactly valid JSON that can be parsed with JSON.parse().
+  
+  Document: ${text}`
+  );
+  
 
   const summary = summaryResult.response.text()
-  const risks = JSON.parse(risksResult.response.text())
-  const simplifiedText = simplifiedResult.response.text()
+  const risksRaw = risksResult.response.text()
+  console.log('Raw risks response:', risksRaw) // For debugging
+  const cleanedRisks = cleanJSONResponse(risksRaw)
+  console.log('Cleaned risks:', cleanedRisks)
 
-  return {
-    summary,
-    risks: risks.map((risk: RiskResponse) => ({
-      severity: risk.severity.toLowerCase() as 'low' | 'medium' | 'high',
-      description: risk.description,
-      recommendation: risk.recommendation
-    })),
-    simplifiedText
+  try {
+    const risks = JSON.parse(cleanedRisks)
+    return {
+      summary,
+      risks: risks.map((risk: RiskResponse) => ({
+        severity: risk.severity.toLowerCase() as 'low' | 'medium' | 'high',
+        description: risk.description,
+        recommendation: risk.recommendation
+      }))
+    }
+  } catch (error) {
+    console.error('JSON parsing failed:', error)
+    throw new Error('Failed to parse risk analysis. Please try again.')
   }
 }
 
@@ -84,7 +89,7 @@ export async function generateChatResponse(
   documentContent: string
 ): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
     
     const prompt = `You're helping someone review a contract they're nervous about signing. 
     Answer their question strictly using the document text below. If unclear:
