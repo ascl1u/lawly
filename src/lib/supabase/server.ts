@@ -3,23 +3,23 @@ import { cookies } from 'next/headers'
 
 export async function createClient() {
 
-  if (process.env.NODE_ENV === 'production' && !globalThis.Request) {
-    console.log('🔧 Build-time detected, returning mock Supabase client')
-    return {
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            single: () => ({ data: null, error: null })
-          })
-        })
-      }),
-      auth: {
-        getUser: () => ({ data: { user: null }, error: null }),
-        getSession: () => ({ data: { session: null }, error: null }),
-        exchangeCodeForSession: () => ({ data: { session: null }, error: null })
-      }
-    }
-  }
+  // if (process.env.NODE_ENV === 'production' && !globalThis.Request) {
+  //   console.log('🔧 Build-time detected, returning mock Supabase client')
+  //   return {
+  //     from: () => ({
+  //       select: () => ({
+  //         eq: () => ({
+  //           single: () => ({ data: null, error: null })
+  //         })
+  //       })
+  //     }),
+  //     auth: {
+  //       getUser: () => ({ data: { user: null }, error: null }),
+  //       getSession: () => ({ data: { session: null }, error: null }),
+  //       exchangeCodeForSession: () => ({ data: { session: null }, error: null })
+  //     }
+  //   }
+  // }
 
   console.log('🔑 Server - Creating client')
   const cookieStore = await cookies()
