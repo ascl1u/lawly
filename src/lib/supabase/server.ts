@@ -12,7 +12,12 @@ export async function createClient() {
             single: () => ({ data: null, error: null })
           })
         })
-      })
+      }),
+      auth: {
+        getUser: () => ({ data: { user: null }, error: null }),
+        getSession: () => ({ data: { session: null }, error: null }),
+        exchangeCodeForSession: () => ({ data: { session: null }, error: null })
+      }
     }
   }
 
