@@ -2,6 +2,20 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export async function createClient() {
+
+  if (process.env.NODE_ENV === 'production' && !globalThis.Request) {
+    console.log('🔧 Build-time detected, returning mock Supabase client')
+    return {
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: () => ({ data: null, error: null })
+          })
+        })
+      })
+    }
+  }
+
   console.log('🔑 Server - Creating client')
   const cookieStore = await cookies()
 
