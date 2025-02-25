@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  console.log('🔒 Middleware - Processing:', request.nextUrl.pathname)
+  
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -36,6 +38,7 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  console.log('🔒 Middleware - Auth status:', user ? 'Authenticated' : 'Unauthenticated')
 
   const protectedPaths = ['/upload', '/documents']
   
@@ -43,6 +46,7 @@ export async function updateSession(request: NextRequest) {
     !user && 
     protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
   ) {
+    console.log('🔒 Middleware - Redirecting unauthorized access to login')
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     url.searchParams.set('redirect', request.nextUrl.pathname)

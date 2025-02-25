@@ -108,9 +108,121 @@ Free Tier: Limited analyses (1 document per month), use older llm model
 Pro Tier (20$/month): More analyses (30 documents per month), SOTA llm model
 Pay-As-You-Go (1$/analysis): Pay for each document you analyze, SOTA llm model
 
-Then, plan the migration to @supabase/ssr in this order:
-a. Update auth middleware (typescript:middleware.ts startLine: 1 endLine: 16)
-b. Update server-side utils (typescript:src/lib/supabase-server.ts startLine: 1 endLine: 8)
-c. Update client components (typescript:src/components/user-avatar-menu.tsx startLine: 1 endLine: 72)
-d. Update auth hooks (typescript:src/hooks/useAuth.ts startLine: 1 endLine: 33)
-e. Update auth routes (typescript:src/app/auth/callback/route.ts startLine: 1 endLine: 44)
+For Lawly’s pricing model (Free, Pro, Pay-As-You-Go), Stripe Billing is the best fit. It supports recurring subscriptions (Pro Tier) and usage-based pricing (Pay-As-You-Go), while also handling free trials and metered billing. Here's how to structure it:
+
+Recommended Integration: Stripe Billing + Checkout
+1. Pro Tier ($20/month)
+Use Case: Recurring subscription for 30 documents/month.
+
+Setup:
+
+Create a subscription product in Stripe with a $20/month price.
+
+Track document usage (e.g., count user’s document analyses) and enforce limits (30 docs/month) in your app’s backend.
+
+Use Stripe Checkout to onboard users to the Pro plan.
+
+2. Pay-As-You-Go ($1/analysis)
+Use Case: Charge per document analyzed (no monthly commitment).
+
+Setup:
+
+Create a metered subscription with a $1/unit price.
+
+Report usage to Stripe via the API whenever a user analyzes a document:
+
+javascript
+Copy
+// Example: Report 1 unit (document) to Stripe
+await stripe.subscriptionItems.createUsageRecord(
+  'si_12345', // Subscription Item ID
+  { quantity: 1, timestamp: 'now' }
+);
+Users are billed at the end of their billing cycle for total usage (e.g., 10 docs = $10).
+
+3. Free Tier (1 document/month)
+Use Case: Limited access without payment.
+
+Setup:
+
+Track document usage in your app’s database (no Stripe integration needed).
+
+When the user exceeds 1 document, prompt them to upgrade via Stripe Checkout.
+
+Implementation Steps
+A. Backend (Subscription Logic)
+Track Usage:
+
+Store user document counts in your database.
+
+For Pay-As-You-Go users, call Stripe’s API to report usage after each analysis.
+
+Enforce Limits:
+
+For Pro users, block document uploads after 30/month (or upsell to Pay-As-You-Go).
+
+For Free users, block after 1 document and prompt upgrade.
+
+B. Frontend (Payment Flow)
+Use Stripe Checkout to handle upgrades:
+
+javascript
+Copy
+// Redirect to Stripe Checkout for Pro Tier
+const handleProCheckout = async () => {
+  const response = await fetch('/create-checkout-session', {
+    method: 'POST',
+    body: JSON.stringify({ priceId: 'price_PRO_TIER_ID' }),
+  });
+  const { id } = await response.json();
+  const stripe = await loadStripe(STRIPE_PUBLIC_KEY);
+  stripe.redirectToCheckout({ sessionId: id });
+};
+
+// Redirect for Pay-As-You-Go
+const handlePaygCheckout = async () => {
+  const response = await fetch('/create-checkout-session', {
+    method: 'POST',
+    body: JSON.stringify({ priceId: 'price_PAYG_ID' }),
+  });
+  // ... same as above ...
+};
+C. Webhooks (Critical for Usage Tracking)
+Listen for subscription events to grant/revoke access:
+
+javascript
+Copy
+// Handle subscription updates (e.g., Pro Tier canceled)
+app.post('/stripe-webhook', async (req, res) => {
+  const event = req.body;
+  switch (event.type) {
+    case 'customer.subscription.deleted':
+      const userId = event.data.object.metadata.userId;
+      await downgradeUserToFreeTier(userId); // Revoke Pro access
+      break;
+    case 'invoice.paid':
+      // Grant access to Pro/Pay-As-You-Go
+      break;
+  }
+  res.sendStatus(200);
+});
+Why This Works for Lawly
+Flexibility: Stripe Billing handles both recurring subscriptions and usage-based pricing.
+
+Scalability: Metered billing automates charges for Pay-As-You-Go.
+
+Speed: Stripe Checkout lets you launch in days, not weeks.
+
+Compliance: Stripe handles SCA, taxes, and fraud detection (Radar).
+
+Cost Optimization Tip
+Use Stripe’s Tax feature to automatically calculate VAT/GST for international users.
+
+Enable prorations so users who upgrade/downgrade mid-cycle pay fair amounts.
+
+Final Architecture
+Copy
+Lawly App → Tracks Document Counts → Reports Usage to Stripe
+                     ↑
+Stripe Checkout (Pro/Pay-As-You-Go) ← Triggers → Stripe Webhooks
+Start with Stripe Checkout + Billing, and expand to a custom UI with Stripe Elements later if needed.

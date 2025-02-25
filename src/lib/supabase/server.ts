@@ -2,32 +2,30 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export async function createClient() {
-  console.log('Creating server client')
+  console.log('🔑 Server - Creating client')
   const cookieStore = await cookies()
-  
-  const client = createServerClient(
+
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          const allCookies = cookieStore.getAll()
-          console.log('Server client cookies found:', allCookies.length)
-          return allCookies
+          return cookieStore.getAll()
         },
         setAll(cookiesToSet) {
-          console.log('Attempting to set cookies in server client:', cookiesToSet.length)
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
-          } catch (error) {
-            console.log('Cookie setting failed:', error)
+            console.log('🔑 Server - Cookies set:', cookiesToSet.length)
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
           }
         },
       },
     }
   )
-  console.log('Server client created successfully')
-  return client
 }
