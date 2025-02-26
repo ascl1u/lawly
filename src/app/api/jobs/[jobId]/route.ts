@@ -3,24 +3,16 @@ import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { jobId: string | string[] } }
+  { params }: { params: Promise<{ jobId: string }> }
 ): Promise<NextResponse> {
-  try {
-    const jobId = Array.isArray(params.jobId) ? params.jobId[0] : params.jobId
-    const status = await getJobStatus(jobId)
-    
-    if (!status) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      )
-    }
+  const { jobId } = await params
 
+  try {
+    const status = await getJobStatus(jobId)
     return NextResponse.json(status)
-  } catch (error) {
-    console.error('Job status check failed:', error)
+  } catch {
     return NextResponse.json(
-      { error: 'Failed to check job status' },
+      { error: 'Failed to get job status' },
       { status: 500 }
     )
   }
