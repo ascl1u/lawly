@@ -26,5 +26,5 @@ export async function getJobStatus(jobId: string) {
   console.log('🔍 Checking job status:', { jobId })
   const job = await redis.get(jobId)
   console.log('📊 Job status result:', job)
-  return job ? JSON.parse(job as string) : null
+  return job ? typeof job === 'string' ? JSON.parse(job) : job : null
 } 

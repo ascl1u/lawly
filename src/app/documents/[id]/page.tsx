@@ -36,19 +36,28 @@ export default function DocumentPage() {
     const checkJobStatus = async () => {
       if (!jobId) return false
       console.log('🔄 Polling job status:', { jobId })
-      const response = await fetch(`/api/jobs/${jobId}`)
-      const job = await response.json()
-      console.log('📊 Poll result:', job)
-      
-      if (!job) return false
-      
-      if (job.status === 'failed') {
-        console.error('❌ Job failed:', job.error)
-        setError(job.error || 'Processing failed')
-        return true
+      try {
+        const response = await fetch(`/api/jobs/${jobId}`)
+        if (!response.ok) {
+          setError('Failed to check job status')
+          return true
+        }
+        
+        const job = await response.json()
+        console.log('📊 Poll result:', job)
+        
+        if (job.status === 'error') {
+          setError(job.error || 'Analysis limit reached')
+          setJobId(null)
+          setIsProcessing(false)
+          return true
+        }
+        
+        return job.status === 'completed'
+      } catch (error) {
+        console.error('Polling error:', error)
+        return false
       }
-      
-      return job.status === 'completed'
     }
 
     const fetchDocument = async () => {
@@ -83,9 +92,9 @@ export default function DocumentPage() {
 
         console.log('Fetched document:', document)
 
-        // Only set jobId if document is being processed
-        if (document.status !== 'analyzed' && document.status !== 'pending') {
-          setJobId(`doc:${document.id}`)
+        // Only start polling if document is in pending or parsing state
+        if (document.status === 'pending' || document.status === 'parsing') {
+          setJobId(`doc:${id}`)
           setIsProcessing(true)
         }
 
@@ -132,7 +141,7 @@ export default function DocumentPage() {
     }
 
     fetchDocument().then(completed => {
-      if (!completed) {
+      if (!completed && (document?.status === 'pending' || document?.status === 'parsing')) {
         startPolling()
       }
     })
@@ -142,7 +151,7 @@ export default function DocumentPage() {
         clearInterval(pollingInterval)
       }
     }
-  }, [id, user, supabase, isDeleted, jobId])
+  }, [id, user, supabase, isDeleted])
 
   if (isDeleted) {
     router.push('/documents')
@@ -292,19 +301,21 @@ export default function DocumentPage() {
                     try {
                       const response = await fetch('/api/process-document', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ documentId: id })
                       })
-                      
-                      if (!response.ok) {
-                        throw new Error('Failed to start analysis')
+
+                      if (response.status === 402) {
+                        setError('Analysis limit reached - please upgrade your plan')
+                        setIsProcessing(false)
+                        return
                       }
                       
-                      await new Promise(resolve => setTimeout(resolve, 1000))
+                      if (!response.ok) throw new Error('Failed to start analysis')
+                      
                       setJobId(`doc:${id}`)
                     } catch (error) {
                       console.error('Error starting analysis:', error)
-                      setError('Failed to start analysis')
+                      setError(error instanceof Error ? error.message : 'Failed to start analysis')
                       setIsProcessing(false)
                     }
                   }}

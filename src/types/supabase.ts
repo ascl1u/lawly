@@ -47,6 +47,8 @@ export interface Database {
           cancel_at_period_end: boolean
           created_at: string
           updated_at: string
+          analysis_usage: number
+          analysis_limit: number
         }
         Insert: {
           id?: string
@@ -60,6 +62,8 @@ export interface Database {
           cancel_at_period_end?: boolean
           created_at?: string
           updated_at?: string
+          analysis_usage?: number
+          analysis_limit?: number
         }
         Update: {
           user_id?: string
@@ -71,6 +75,8 @@ export interface Database {
           current_period_end?: string | null
           cancel_at_period_end?: boolean
           updated_at?: string
+          analysis_usage?: number
+          analysis_limit?: number
         }
       }
       documents: {

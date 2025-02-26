@@ -3,6 +3,7 @@ import { DocumentLoader } from '@/lib/document-loader'
 import { analyzeDocument } from '@/lib/ai-service'
 import { generateUUID } from '@/lib/utils'
 import { redis } from '@/lib/queue'
+import { incrementAnalysisUsage, checkAnalysisUsage } from '@/lib/usage'
 
 export async function processDocument(documentId: string) {
   console.log('=== PROCESS DOCUMENT START ===', { documentId })
@@ -32,17 +33,31 @@ export async function processDocument(documentId: string) {
   }
 
   try {
-    await updateStatus('parsing')
+    // Add usage check before processing
     const { data: document } = await supabaseAdmin
       .from('documents')
       .select('*')
       .eq('id', documentId)
       .single()
 
-    if (!document?.file_url) {
-      throw new Error('Document not found or missing file URL')
+    if (!document?.user_id || document.status !== 'pending') {
+      console.error('Invalid processing request:', { document })
+      await updateStatus('error', 'Invalid document or user')
+      return { success: false }
     }
 
+    // Check usage limits before processing
+    const { allowed, remaining } = await checkAnalysisUsage(
+      document.user_id,
+      supabaseAdmin
+    )
+
+    if (!allowed) {
+      await updateStatus('error', 'Analysis limit exceeded')
+      return { success: false, remaining }
+    }
+
+    await updateStatus('parsing')
     const { data: fileData } = await supabaseAdmin.storage
       .from('documents')
       .download(`${document.user_id}/${documentId}/${document.file_name}`)
@@ -88,6 +103,20 @@ export async function processDocument(documentId: string) {
         parsed_at: new Date().toISOString()
       }).eq('id', documentId)
     ])
+
+    // Track successful analysis
+    if (document.user_id) {
+      const { success, remaining: updatedRemaining } = await incrementAnalysisUsage(
+        document.user_id,
+        supabaseAdmin
+      )
+      
+      if (!success) {
+        console.error('Usage tracking failed for user:', document.user_id)
+      } else {
+        console.log('Analysis usage updated. Remaining:', updatedRemaining)
+      }
+    }
 
     console.timeEnd('total-processing-time')
     return { success: true }
