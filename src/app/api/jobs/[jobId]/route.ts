@@ -6,8 +6,7 @@ export async function GET(
   { params }: { params: { jobId: string } }
 ) {
   try {
-    const { jobId } = params
-    const status = await getJobStatus(jobId)
+    const status = await getJobStatus(params.jobId)
     
     if (!status) {
       return NextResponse.json(
