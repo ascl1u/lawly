@@ -1,6 +1,6 @@
 // src/app/dashboard/account/page.tsx
 import { auth } from '@/lib/auth/server'
-import { getUserSubscription } from '@/lib/stripe/subscription'
+// import { getUserSubscription } from '@/lib/stripe/subscription'
 import { SubscriptionStatus } from '@/components/subscription/subscription-status'
 import { redirect } from 'next/navigation'
 

@@ -1,6 +1,6 @@
 // src/app/dashboard/page.tsx
 import { auth } from '@/lib/auth/server'
-import { createClient } from '@/lib/supabase/server'
+// import { createClient } from '@/lib/supabase/server'
 import { getUserSubscription } from '@/lib/stripe/subscription'
 import { UsageMeter } from '@/components/dashboard/usage-meter'
 import { redirect } from 'next/navigation'

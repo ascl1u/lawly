@@ -151,7 +151,7 @@ export default function DocumentPage() {
         clearInterval(pollingInterval)
       }
     }
-  }, [id, user, supabase, isDeleted])
+  }, [id, user, supabase, isDeleted, document?.status, jobId])
 
   if (isDeleted) {
     router.push('/documents')
