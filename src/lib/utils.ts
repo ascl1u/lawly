@@ -12,3 +12,11 @@ export function generateUUID(): string {
     return v.toString(16)
   })
 }
+
+export function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}

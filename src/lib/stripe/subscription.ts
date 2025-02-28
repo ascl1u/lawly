@@ -12,6 +12,7 @@ export interface UserSubscription {
   stripeCheckoutSessionId: string | null
   status: SubscriptionStatus
   currentPeriodEnd: string | null
+  cancel_at_period_end: boolean
   isActive: boolean
   isPro: boolean
   tier: 'free' | 'pro' | 'pay_as_you_go'  // From users table
@@ -62,6 +63,7 @@ export async function getUserSubscription(
     stripeCheckoutSessionId: data.stripe_checkout_session_id,
     status: data.status as SubscriptionStatus,
     currentPeriodEnd: data.current_period_end,
+    cancel_at_period_end: data.cancel_at_period_end || false,
     isActive: ['active', 'trialing'].includes(data.status),
     isPro: data.users.tier === 'pro' && ['active', 'trialing'].includes(data.status),
     tier: data.users.tier,  // Get tier from users table

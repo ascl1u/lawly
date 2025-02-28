@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/server'
 import { handleSubscriptionChange, handleInvoiceEvent } from '@/lib/stripe/subscription-handlers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import Stripe from 'stripe'
 
 export async function POST(req: Request) {
   // Skip during static build analysis
@@ -47,6 +48,25 @@ export async function POST(req: Request) {
           case 'invoice.payment_failed':
             await handleInvoiceEvent(event, supabase)
             break
+
+          case 'billing_portal.session.created': {
+            const portalSession = event.data.object as Stripe.BillingPortal.Session;
+            console.log('✅ Customer portal session created:', {
+              id: portalSession.id,
+              customer: portalSession.customer,
+              returnUrl: portalSession.return_url
+            });
+            break;
+          }
+
+          case 'customer.subscription.trial_will_end': {
+            const subscription = event.data.object as Stripe.Subscription;
+            console.log('⚠️ Trial will end soon:', {
+              subscription: subscription.id,
+              customer: subscription.customer
+            });
+            break;
+          }
 
           default:
             console.log('📝 Unhandled event type:', event.type)
