@@ -50,21 +50,27 @@ export function useAuth() {
     },
     signUp: async (email: string, password: string) => {
       try {
-        const { data, error } = await supabase.auth.signUp({
+        const { data: { user }, error: authError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/api/auth/callback`
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+            data: {
+              analysis_usage: 0,
+              analysis_limit: 1,
+              tier: 'free'
+            }
           }
         })
-        if (error) throw error
+        console.log('Auth signup metadata:', user?.app_metadata)
+        if (authError) throw authError
         
         // Check if user already exists
-        if (data?.user?.identities?.length === 0) {
+        if (user?.identities?.length === 0) {
           throw new Error('This email is already registered. Please sign in instead.')
         }
         
-        return { data }
+        return { data: { user } }
       } catch (error) {
         handleAuthError(error instanceof Error ? error : new Error('Unknown error'))
       }

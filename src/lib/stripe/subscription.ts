@@ -9,13 +9,17 @@ export interface UserSubscription {
   userId: string
   stripeCustomerId: string | null
   stripeSubscriptionId: string | null
-  tier: SubscriptionTier
+  stripeCheckoutSessionId: string | null
   status: SubscriptionStatus
   currentPeriodEnd: string | null
   isActive: boolean
   isPro: boolean
-  analysisUsage: number
-  analysisLimit: number
+  tier: 'free' | 'pro' | 'pay_as_you_go'  // From users table
+  users: {
+    analysis_usage: number
+    analysis_limit: number
+    reset_cycle: string | null
+  }
 }
 
 /**
@@ -32,7 +36,15 @@ export async function getUserSubscription(
   
   const { data, error } = await client
     .from('subscriptions')
-    .select('*')
+    .select(`
+      *,
+      users!inner (
+        tier,
+        analysis_usage,
+        analysis_limit,
+        reset_cycle
+      )
+    `)
     .eq('user_id', userId)
     .single()
   
@@ -47,13 +59,17 @@ export async function getUserSubscription(
     userId: data.user_id,
     stripeCustomerId: data.stripe_customer_id,
     stripeSubscriptionId: data.stripe_subscription_id,
-    tier: data.tier as SubscriptionTier,
+    stripeCheckoutSessionId: data.stripe_checkout_session_id,
     status: data.status as SubscriptionStatus,
     currentPeriodEnd: data.current_period_end,
     isActive: ['active', 'trialing'].includes(data.status),
-    isPro: data.tier === 'pro' && ['active', 'trialing'].includes(data.status),
-    analysisUsage: data.analysis_usage,
-    analysisLimit: data.analysis_limit
+    isPro: data.users.tier === 'pro' && ['active', 'trialing'].includes(data.status),
+    tier: data.users.tier,  // Get tier from users table
+    users: {
+      analysis_usage: data.users.analysis_usage,
+      analysis_limit: data.users.analysis_limit,
+      reset_cycle: data.users.reset_cycle
+    }
   }
 }
 

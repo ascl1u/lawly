@@ -19,7 +19,7 @@ export async function SubscriptionStatus() {
             <div>
               <p className="text-sm text-muted-foreground">Current Plan</p>
               <p className="font-medium">
-                {subscription.tier === 'pro' ? 'Pro' : 'Pay As You Go'}
+                {subscription.tier === 'pro' ? 'Pro' : 'Free'}
               </p>
             </div>
             <div>
@@ -49,6 +49,7 @@ export async function SubscriptionStatus() {
             <div>
               <p className="text-sm text-muted-foreground">Analyses Used</p>
               <p className="font-medium">
+                {subscription.users?.analysis_usage || 0} / {subscription.users?.analysis_limit || 30}
               </p>
             </div>
           )}

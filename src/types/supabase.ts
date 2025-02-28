@@ -15,68 +15,74 @@ export interface Database {
         Row: {
           id: string
           email: string
-          password_hash: string
           created_at: string
           updated_at: string
+          analysis_usage: number
+          analysis_limit: number
+          reset_cycle: string | null
+          tier: 'free' | 'pro' | 'pay_as_you_go'
         }
         Insert: {
           id?: string
           email: string
-          password_hash: string
           created_at?: string
           updated_at?: string
+          analysis_usage?: number
+          analysis_limit?: number
+          reset_cycle?: string | null
+          tier?: 'free' | 'pro' | 'pay_as_you_go'
         }
         Update: {
           id?: string
           email?: string
-          password_hash?: string
           created_at?: string
           updated_at?: string
+          analysis_usage?: number
+          analysis_limit?: number
+          reset_cycle?: string | null
+          tier?: 'free' | 'pro' | 'pay_as_you_go'
         }
       }
       subscriptions: {
         Row: {
           id: string
-          user_id: string
+          user_id: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
-          tier: SubscriptionTier
+          stripe_checkout_session_id: string | null
           status: string
           current_period_start: string | null
           current_period_end: string | null
           cancel_at_period_end: boolean
+          price_id: string | null
           created_at: string
           updated_at: string
-          analysis_usage: number
-          analysis_limit: number
         }
         Insert: {
           id?: string
-          user_id: string
+          user_id?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
-          tier?: SubscriptionTier
+          stripe_checkout_session_id?: string | null
           status?: string
           current_period_start?: string | null
           current_period_end?: string | null
           cancel_at_period_end?: boolean
+          price_id?: string | null
           created_at?: string
           updated_at?: string
-          analysis_usage?: number
-          analysis_limit?: number
         }
         Update: {
-          user_id?: string
+          user_id?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
-          tier?: SubscriptionTier
+          stripe_checkout_session_id?: string | null
           status?: string
           current_period_start?: string | null
           current_period_end?: string | null
           cancel_at_period_end?: boolean
+          price_id?: string | null
           updated_at?: string
-          analysis_usage?: number
-          analysis_limit?: number
         }
       }
       documents: {

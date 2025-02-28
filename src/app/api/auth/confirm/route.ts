@@ -30,20 +30,9 @@ export async function GET(request: Request) {
 
     // Create or update user record after successful verification
     if (data.user) {
-      const { error: upsertError } = await supabase
-        .from('users')
-        .upsert(
-          {
-            id: data.user.id,
-            email: data.user.email,
-            updated_at: new Date().toISOString()
-          },
-          { onConflict: 'id' }
-        )
-
-      if (upsertError) {
-        console.error('User upsert error:', upsertError)
-      }
+      // No need to update anything - Supabase handles confirmation automatically
+      // The trigger will have already created the public user record
+      console.log('Successfully confirmed user:', data.user.id)
     }
 
     return NextResponse.redirect(

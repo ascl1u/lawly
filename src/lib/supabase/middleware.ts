@@ -4,6 +4,12 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function updateSession(request: NextRequest) {
   console.log('🔒 Middleware - Processing:', request.nextUrl.pathname)
   
+  console.log('🔍 Middleware - Incoming Cookies:', {
+    accessToken: request.cookies.get('sb-access-token')?.value.slice(-8),
+    refreshToken: request.cookies.get('sb-refresh-token')?.value.slice(-8),
+    path: request.nextUrl.pathname
+  })
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -39,6 +45,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
   console.log('🔒 Middleware - Auth status:', user ? 'Authenticated' : 'Unauthenticated')
+
+  console.log('👤 Middleware - Resolved User:', {
+    id: user?.id,
+    email: user?.email,
+    isAuthenticated: !!user
+  })
 
   const protectedPaths = ['/upload', '/documents']
   

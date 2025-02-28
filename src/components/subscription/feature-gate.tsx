@@ -8,42 +8,29 @@ import type { UserSubscription } from '@/lib/stripe/subscription'
 interface FeatureGateProps {
   children: React.ReactNode
   subscription: UserSubscription | null
-  requiredTier?: 'pro' | 'pay_as_you_go'
+  requiredTier: 'pro' | 'pay_as_you_go'
 }
 
-export function FeatureGate({ 
-  children, 
-  subscription, 
-  requiredTier = 'pro' 
-}: FeatureGateProps) {
+export function FeatureGate({ children, subscription, requiredTier }: FeatureGateProps) {
   const router = useRouter()
   
-  // No subscription or inactive
-  if (!subscription || !subscription.isActive) {
-    return (
-      <div className="text-center p-8 border rounded-lg">
-        <h3 className="text-xl font-bold mb-2">Premium Feature</h3>
-        <p className="mb-4">This feature requires an active subscription.</p>
-        <Button onClick={() => router.push('/pricing')}>
-          Subscribe Now
-        </Button>
-      </div>
-    )
+  // Check if user has required tier access
+  const hasAccess = subscription?.tier === requiredTier || 
+    (requiredTier === 'pay_as_you_go' && subscription?.tier === 'pro')
+  
+  if (hasAccess) {
+    return <>{children}</>
   }
   
-  // Has subscription but wrong tier
-  if (requiredTier === 'pro' && subscription.tier !== 'pro') {
-    return (
-      <div className="text-center p-8 border rounded-lg">
-        <h3 className="text-xl font-bold mb-2">Pro Feature</h3>
-        <p className="mb-4">This feature is only available on the Pro plan.</p>
-        <Button onClick={() => router.push('/pricing')}>
-          Upgrade to Pro
-        </Button>
-      </div>
-    )
-  }
-  
-  // All checks passed, render children
-  return <>{children}</>
+  return (
+    <div className="rounded-lg border p-6 text-center">
+      <h3 className="text-lg font-medium mb-2">Premium Feature</h3>
+      <p className="text-sm text-gray-500 mb-4">
+        This feature requires the {requiredTier === 'pro' ? 'Pro Plan' : 'Pay-As-You-Go Plan'}.
+      </p>
+      <Button onClick={() => router.push('/pricing')}>
+        Upgrade Now
+      </Button>
+    </div>
+  )
 }

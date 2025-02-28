@@ -106,15 +106,13 @@ export async function processDocument(documentId: string) {
 
     // Track successful analysis
     if (document.user_id) {
-      const { success, remaining: updatedRemaining } = await incrementAnalysisUsage(
-        document.user_id,
-        supabaseAdmin
-      )
-      
-      if (!success) {
-        console.error('Usage tracking failed for user:', document.user_id)
-      } else {
-        console.log('Analysis usage updated. Remaining:', updatedRemaining)
+      try {
+        await incrementAnalysisUsage(document.user_id, supabaseAdmin)
+        const { remaining } = await checkAnalysisUsage(document.user_id, supabaseAdmin)
+        console.log('Usage updated successfully, remaining:', remaining)
+      } catch (error) {
+        console.error('Usage tracking failed:', error)
+        await updateStatus('error', 'Usage update failed')
       }
     }
 

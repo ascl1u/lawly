@@ -9,12 +9,17 @@ export default function PricingClientPage() {
   const [loading, setLoading] = useState<PlanType | null>(null)
 
   const handleSubscribe = async (plan: PlanType) => {
+    if (!PLAN_DETAILS[plan as 'pro'].priceId) {
+      console.log('Skipping subscription for free tier')
+      return
+    }
+
     try {
       setLoading(plan)
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId: PLAN_DETAILS[plan].priceId })
+        body: JSON.stringify({ priceId: PLAN_DETAILS[plan as 'pro'].priceId })
       })
 
       const { url, error } = await response.json()
@@ -41,10 +46,11 @@ export default function PricingClientPage() {
           </ul>
           <button
             onClick={() => handleSubscribe(plan)}
-            disabled={loading === plan}
+            disabled={loading === plan || !PLAN_DETAILS[plan as 'pro'].priceId}
             className="mt-6 w-full bg-blue-600 text-white py-2 rounded-md"
           >
-            {loading === plan ? 'Loading...' : 'Subscribe'}
+            {!PLAN_DETAILS[plan as 'pro'].priceId ? 'Current Plan' : 
+             loading === plan ? 'Loading...' : 'Subscribe'}
           </button>
         </div>
       ))}

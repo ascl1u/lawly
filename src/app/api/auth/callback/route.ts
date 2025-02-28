@@ -49,31 +49,32 @@ export async function GET(request: Request) {
         throw new Error('No user session after validation')
       }
 
-      // Create or update user record with logging
-      console.log('Attempting user upsert:', { 
-        id: session.user.id,
-        email: session.user.email 
-      })
-
-      const { error: upsertError } = await supabase
-        .from('users')
-        .upsert(
-          {
-            id: session.user.id,
-            email: session.user.email,
-            updated_at: new Date().toISOString()
-          },
-          { 
-            onConflict: 'id'
-          }
-        )
-
-      if (upsertError) {
-        console.error('User upsert error:', upsertError)
-        throw upsertError
+      // Initialize user data if needed
+      try {
+        // Check if user exists in public.users table
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', validUser.id)
+          .single();
+        
+        if (!existingUser) {
+          // Create user record with default values
+          await supabase.from('users').insert({
+            id: validUser.id,
+            email: validUser.email,
+            analysis_usage: 0,
+            analysis_limit: 1,
+            tier: 'free'
+          });
+          
+          console.log('Created new user record for:', validUser.id);
+        }
+      } catch (initError) {
+        console.error('Failed to initialize user data:', initError);
+        // Continue with redirect even if this fails
       }
 
-      console.log('User upsert successful')
       return NextResponse.redirect(new URL(redirectTo, request.url))
     } catch (error) {
       console.error('Auth callback error:', error)
