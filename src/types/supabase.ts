@@ -90,34 +90,43 @@ export interface Database {
           id: string
           user_id: string
           file_name: string
+          encoded_file_name?: string | null
           file_type: string
           file_url: string | null
           parsed_text: string | null
-          uploaded_at: string
+          uploaded_at?: string
           status: 'pending' | 'parsing' | 'analyzed' | 'error'
           parsed_at: string | null
+          content: string | null
+          error_message: string | null
         }
         Insert: {
           id?: string
           user_id: string
           file_name: string
+          encoded_file_name?: string | null
           file_type: string
           file_url?: string | null
           parsed_text?: string | null
           uploaded_at?: string
           status?: 'pending' | 'parsing' | 'analyzed' | 'error'
           parsed_at?: string | null
+          content?: string | null
+          error_message?: string | null
         }
         Update: {
           id?: string
           user_id?: string
           file_name?: string
+          encoded_file_name?: string | null
           file_type?: string
           file_url?: string | null
           parsed_text?: string | null
           uploaded_at?: string
           status?: 'pending' | 'parsing' | 'analyzed' | 'error'
           parsed_at?: string | null
+          content?: string | null
+          error_message?: string | null
         }
       }
       summaries: {

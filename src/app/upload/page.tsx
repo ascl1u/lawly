@@ -72,11 +72,25 @@ export default function UploadPage() {
 
     try {
       const documentId = crypto.randomUUID()
-      const filePath = `${user.id}/${documentId}/${selectedFile.name}`
+      
+      // Create a safe filename by encoding non-ASCII characters
+      const originalFileName = selectedFile.name
+      
+      // Create a new File object with an ASCII-only name
+      const timestamp = Date.now()
+      const fileExtension = originalFileName.split('.').pop() || ''
+      const safeFileName = `file_${timestamp}.${fileExtension}`
+      
+      // Create a new File object with the safe name
+      const safeFile = new File([selectedFile], safeFileName, {
+        type: selectedFile.type,
+      })
+      
+      const filePath = `${user.id}/${documentId}/${safeFileName}`
 
       const { error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(filePath, selectedFile, {
+        .upload(filePath, safeFile, {
           cacheControl: '3600',
           upsert: false
         })
@@ -95,7 +109,8 @@ export default function UploadPage() {
         .insert({
           id: documentId,
           user_id: user.id,
-          file_name: selectedFile.name,
+          file_name: originalFileName, // Store the original filename in the database
+          encoded_file_name: safeFileName, // Store the safe filename for storage operations
           file_type: selectedFile.type,
           file_url: publicUrl,
           uploaded_at: new Date().toISOString(),

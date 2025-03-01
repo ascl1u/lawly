@@ -1,6 +1,8 @@
 export interface DocumentDetails {
   id: string;
   file_name: string;
+  encoded_file_name: string | null;
+  error_message: string | null;
   file_type: string;
   file_url: string | null;
   content: string | null;
@@ -27,6 +29,7 @@ export interface Document {
   id: string;
   userId: string;
   fileName: string;
+  encodedFileName: string | null;
   fileType: string;
   fileUrl: string | null;
   parsedText: string | null;

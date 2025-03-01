@@ -43,7 +43,13 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
 
       try {
         setLoading(true);
-        const storagePath = `${user.id}/${doc.id}/${doc.file_name}`;
+        
+        // Use the encoded_file_name if available, otherwise fall back to file_name
+        const fileName = doc.encoded_file_name || doc.file_name;
+        const storagePath = `${user.id}/${doc.id}/${fileName}`;
+        
+        console.log('Attempting to download file from path:', storagePath);
+        
         const { data, error: downloadError } = await supabase
           .storage
           .from('documents')

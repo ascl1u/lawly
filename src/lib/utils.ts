@@ -20,3 +20,28 @@ export function formatDate(dateString: string): string {
     year: 'numeric'
   })
 }
+/**
+ * Utility functions for handling file paths and names
+ */
+
+/**
+ * Encodes a filename to be safe for storage paths
+ */
+export function encodeFileName(fileName: string): string {
+  return encodeURIComponent(fileName)
+}
+
+/**
+ * Decodes an encoded filename back to its original form
+ */
+export function decodeFileName(encodedFileName: string): string {
+  return decodeURIComponent(encodedFileName)
+}
+
+/**
+ * Generates a storage path for a document
+ */
+export function getDocumentStoragePath(userId: string, documentId: string, fileName: string, isEncoded = false): string {
+  const safeFileName = isEncoded ? fileName : encodeFileName(fileName)
+  return `${userId}/${documentId}/${safeFileName}`
+}

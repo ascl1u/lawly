@@ -53,10 +53,23 @@ export default function DocumentsPage() {
     if (!user) return
 
     try {
+      // Get the encoded filename
+      const { data: documentData } = await supabase
+        .from('documents')
+        .select('encoded_file_name')
+        .eq('id', doc.id)
+        .single()
+      
+      if (!documentData?.encoded_file_name) {
+        throw new Error('Encoded filename not found')
+      }
+      
+      const filePathToDelete = `${user.id}/${doc.id}/${documentData.encoded_file_name}`
+      
       await Promise.all([
         // Delete from Supabase
         supabase.from('documents').delete().eq('id', doc.id),
-        supabase.storage.from('documents').remove([`${user.id}/${doc.id}/${doc.file_name}`]),
+        supabase.storage.from('documents').remove([filePathToDelete]),
         // Delete from Redis via API
         fetch(`/api/documents/${doc.id}`, { method: 'DELETE' })
       ])

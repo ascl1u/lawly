@@ -60,7 +60,7 @@ export async function processDocument(documentId: string) {
     await updateStatus('parsing')
     const { data: fileData } = await supabaseAdmin.storage
       .from('documents')
-      .download(`${document.user_id}/${documentId}/${document.file_name}`)
+      .download(`${document.user_id}/${documentId}/${document.encoded_file_name}`)
 
     if (!fileData) {
       throw new Error('No file data received')
