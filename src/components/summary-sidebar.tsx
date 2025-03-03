@@ -6,6 +6,8 @@ import {
   CardContent 
 } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import ReactMarkdown from 'react-markdown'
+import rehypeSanitize from 'rehype-sanitize'
 
 interface SummarySidebarProps {
   document: DocumentDetails
@@ -22,10 +24,14 @@ export function SummarySidebar({ document }: SummarySidebarProps) {
         <ScrollArea className="h-[calc(100vh-16rem)]">
           <div className="p-6 space-y-4">
             <Card className="bg-white">
-              <CardContent className="p-4">
-                <p className="text-primary">
-                  {document.summary?.summary_text || 'No summary available'}
-                </p>
+              <CardContent className="p-4 prose dark:prose-invert max-w-none">
+                {document.summary?.summary_text ? (
+                  <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+                    {document.summary.summary_text}
+                  </ReactMarkdown>
+                ) : (
+                  <p className="text-primary">No summary available</p>
+                )}
               </CardContent>
             </Card>
           </div>

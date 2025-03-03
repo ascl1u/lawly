@@ -37,12 +37,20 @@ export async function analyzeDocument(text: string): Promise<AnalysisResult> {
   
   // First, get the summary
   const summaryResult = await model.generateContent(
-    `Summarize this document in 3 short paragraphs:
-    1. Purpose: What does this document do?
-    2. Key obligations: List the top 3 responsibilities for the signer.
-    3. Deadlines/consequences: Any urgent actions or risks?
-    Use plain language. Document: ${text}`
-  );
+    `Summarize this document in 3 short paragraphs with clear Markdown formatting:
+    
+  **(Purpose):** What does this document do?  
+  **(Key Obligations):** List the top 3 responsibilities for the signer as bullet points.  
+  **(Deadlines/Consequences):** Describe any urgent actions or risks.
+  
+  Use plain language and format your response with Markdown for improved visual hierarchy.
+  
+  ### Document
+  \`\`\`
+  ${text}
+  \`\`\`
+  `
+  );  
   
   // Then, get the risks
   const risksResult = await model.generateContent(
@@ -91,14 +99,24 @@ export async function generateChatResponse(
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
     
-    const prompt = `You're helping someone review a contract they're nervous about signing. 
-    Answer their question strictly using the document text below. If unclear:
-    - Explain why the document doesn't address this
-    - Suggest 3 questions they should ask the other party
-
-    Document: ${documentContent}
-    Question: ${question}
-    `
+    const prompt = `Act as a contract review assistant. Your task:
+    **1. FIRST:** Begin with "I'll suggest considerations, but this isn't legal advice."
+    **2. BASE RESPONSE** on the user's document.
+    **3. IF UNCLEAR:** Identify gaps and suggest 3 questions to ask the counterparty.
+    **4. NEVER** assume jurisdiction/laws.
+    
+    Please format your response using Markdown with clear headings and bullet lists where appropriate.
+    
+    ### Document
+    \`\`\`
+    ${documentContent}
+    \`\`\`
+    
+    ### Question
+    \`\`\`
+    ${question}
+    \`\`\`
+    `    
 
     const result = await model.generateContent(prompt)
     const response = await result.response

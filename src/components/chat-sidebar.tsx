@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
+import ReactMarkdown from 'react-markdown'
+import rehypeSanitize from 'rehype-sanitize'
 
 interface ChatSidebarProps {
   document: DocumentDetails
@@ -132,9 +134,15 @@ export function ChatSidebar({ document }: ChatSidebarProps) {
                   "max-w-[80%] rounded-lg p-3",
                   msg.role === 'user' 
                     ? "bg-secondary text-primary"
-                    : "bg-white text-primary"
+                    : "bg-white text-primary prose dark:prose-invert max-w-none"
                 )}>
-                  {msg.content}
+                  {msg.role === 'user' ? (
+                    <p>{msg.content}</p>
+                  ) : (
+                    <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  )}
                 </div>
               </div>
             ))}
