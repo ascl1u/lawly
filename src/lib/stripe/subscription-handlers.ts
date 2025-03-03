@@ -23,7 +23,7 @@ export async function handleSubscriptionChange(
       case 'customer.subscription.updated': {
         const subscription = data as Stripe.Subscription
         const priceId = subscription.items.data[0]?.price.id
-        const tier = priceId === process.env.STRIPE_PRO_PRICE_ID ? 'pro' : 'pay_as_you_go'
+        const tier = priceId === process.env.STRIPE_PRO_PRICE_ID ? 'pro' : 'free'
         
         console.log('🔄 Subscription updated:', {
           subscriptionId: subscription.id,

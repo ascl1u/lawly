@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       .single()
 
     // Determine tier based on priceId
-    const tier = priceId === STRIPE_PRICE_IDS.pro ? 'pro' : 'pay_as_you_go'
+    const tier = priceId === STRIPE_PRICE_IDS.pro ? 'pro' : 'free'
     
     console.log('💰 Stripe - Creating checkout session for tier:', tier)
 

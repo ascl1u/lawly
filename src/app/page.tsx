@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Features } from "@/components/features"
 import { Testimonials } from "@/components/testimonials"
 import { FAQ } from "@/components/faq"
-import { ArrowRight, PlayCircle } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 
 export default function Home() {
   const router = useRouter()
@@ -79,15 +79,6 @@ export default function Home() {
                   </Button>
                 </>
               )}
-            </div>
-
-            <div className="mt-12 relative w-full max-w-3xl mx-auto aspect-video rounded-lg overflow-hidden bg-gray-800 border border-gray-700">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <PlayCircle className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                  <p className="text-gray-400">Watch Demo Video</p>
-                </div>
-              </div>
             </div>
           </div>
         </Container>

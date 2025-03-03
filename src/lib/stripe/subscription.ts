@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'unpaid' | null
-export type SubscriptionTier = 'pro' | 'pay_as_you_go' | null
+export type SubscriptionTier = 'pro' | 'free'
 
 export interface UserSubscription {
   id: string
@@ -15,7 +15,7 @@ export interface UserSubscription {
   cancel_at_period_end: boolean
   isActive: boolean
   isPro: boolean
-  tier: 'free' | 'pro' | 'pay_as_you_go'  // From users table
+  tier: 'free' | 'pro' // From users table
   users: {
     analysis_usage: number
     analysis_limit: number

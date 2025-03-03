@@ -67,10 +67,6 @@ export default function TermsOfService() {
         <p>We may update these Terms from time to time. Your continued use of Lawly after updates constitutes acceptance of the new Terms.</p>
       </section>
 
-      <section className="mt-8">
-        <h2>9. Contact Us</h2>
-        <p>If you have any questions, contact us at <a href="mailto:support@lawly.com" className="text-blue-400 hover:text-blue-300">support@lawly.com</a>.</p>
-      </section>
     </PolicyContainer>
   )
 } 

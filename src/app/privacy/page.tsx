@@ -32,7 +32,7 @@ export default function PrivacyPolicy() {
       <section className="mt-8">
         <h2>4. Information Sharing</h2>
         <h3>4.1. Personal Information</h3>
-        <p>We may share your personal information with third parties for their marketing purposes or to provide services on our behalf.</p>
+        <p>We do not share your personal information with third parties for their marketing purposes or to provide services on our behalf.</p>
       </section>
 
       <section className="mt-8">
@@ -41,20 +41,10 @@ export default function PrivacyPolicy() {
       </section>
 
       <section className="mt-8">
-        <h2>6. Your Choices</h2>
-        <h3>6.1. Account Information</h3>
-        <p>You can update your account information in the App settings.</p>
-      </section>
-
-      <section className="mt-8">
-        <h2>8. Changes to This Privacy Policy</h2>
+        <h2>7. Changes to This Privacy Policy</h2>
         <p>We may update this Privacy Policy from time to time. If we make material changes, we will notify you by email or through the App.</p>
       </section>
 
-      <section className="mt-8">
-        <h2>9. Contact Us</h2>
-        <p>If you have any questions about this Privacy Policy, please contact us at <a href="mailto:privacy@lawly.com">privacy@lawly.com</a>.</p>
-      </section>
     </PolicyContainer>
   )
 } 

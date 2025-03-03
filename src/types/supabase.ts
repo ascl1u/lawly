@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type SubscriptionTier = 'free' | 'pro' | 'pay_as_you_go'
+export type SubscriptionTier = 'free' | 'pro'
 
 export interface Database {
   public: {
@@ -20,7 +20,7 @@ export interface Database {
           analysis_usage: number
           analysis_limit: number
           reset_cycle: string | null
-          tier: 'free' | 'pro' | 'pay_as_you_go'
+          tier: 'free' | 'pro'
         }
         Insert: {
           id?: string
@@ -30,7 +30,7 @@ export interface Database {
           analysis_usage?: number
           analysis_limit?: number
           reset_cycle?: string | null
-          tier?: 'free' | 'pro' | 'pay_as_you_go'
+          tier?: 'free' | 'pro'
         }
         Update: {
           id?: string
@@ -40,7 +40,7 @@ export interface Database {
           analysis_usage?: number
           analysis_limit?: number
           reset_cycle?: string | null
-          tier?: 'free' | 'pro' | 'pay_as_you_go'
+          tier?: 'free' | 'pro'
         }
       }
       subscriptions: {

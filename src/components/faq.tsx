@@ -4,18 +4,18 @@ const faqs = [
   {
     question: "Is my data safe?",
     answer:
-      "Yes! All documents are encrypted in transit and at rest. We automatically delete all documents after 24 hours and never share your data with third parties.",
+      "Yes! All documents are encrypted and you can delete them at any time. We will never share your data with third parties.",
   },
   {
     question: "How accurate is Lawly?",
     answer:
       "Lawly has been trained on millions of legal documents and validated by legal experts. While not a replacement for legal counsel, it provides reliable insights for initial document review.",
   },
-  {
-    question: "Can I export the results?",
-    answer:
-      "Yes! You can download summaries and analysis as PDF reports, or share them directly via email with your team or legal counsel.",
-  },
+  // {
+  //   question: "Can I export the results?",
+  //   answer:
+  //     "Yes! You can download summaries and analysis as PDF reports, or share them directly via email with your team or legal counsel.",
+  // },
   {
     question: "What types of documents can I analyze?",
     answer:

@@ -2,7 +2,6 @@ import Stripe from 'stripe'
 
 export const STRIPE_PRICE_IDS = {
   pro: process.env.STRIPE_PRICE_ID_PRO || 'price_123',
-  pay_as_you_go: process.env.STRIPE_PRICE_ID_PAY_AS_YOU_GO || 'price_456'
 }
 
 // Create a build-time safe version of Stripe
