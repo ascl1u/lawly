@@ -1,10 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { SubscriptionTier } from '@/types/supabase'
 
 type UsageResult = {
   allowed: boolean
   remaining: number
   limit: number
   resetCycle?: string
+  tier: SubscriptionTier
 }
 
 export async function checkAnalysisUsage(
@@ -20,7 +22,7 @@ export async function checkAnalysisUsage(
 
   if (error || !user) {
     console.error('Usage check failed:', error)
-    return { allowed: false, remaining: 0, limit: 0 }
+    return { allowed: false, remaining: 0, limit: 0, tier: 'free' }
   }
 
   const remaining = Math.max(user.analysis_limit - user.analysis_usage, 0)
@@ -28,7 +30,8 @@ export async function checkAnalysisUsage(
     allowed: remaining > 0,
     remaining,
     limit: user.analysis_limit,
-    resetCycle: user.reset_cycle || '1 month'
+    resetCycle: user.reset_cycle || '1 month',
+    tier: user.tier || 'free'
   }
 }
 

@@ -26,34 +26,43 @@ export async function POST(request: Request) {
       )
     }
 
+    // Get user tier
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('tier')
+      .eq('id', document.user_id)
+      .single()
+
+    const userTier = user?.tier || 'free'
+
     // Check usage limits
-    const { allowed, remaining } = await checkAnalysisUsage(
+    const { allowed, limit } = await checkAnalysisUsage(
       document.user_id, 
       supabaseAdmin
     )
 
     if (!allowed) {
+      const errorMessage = userTier === 'free'
+        ? `Free tier analysis limit reached (${limit} documents per month)`
+        : `Pro tier analysis limit reached (${limit} documents per month)`
+
       await supabaseAdmin
         .from('documents')
         .update({ 
           status: 'error',
-          error_message: remaining === 0 
-            ? 'Analysis limit reached' 
-            : 'Subscription required',
+          error_message: errorMessage,
         })
         .eq('id', documentId)
 
       await redis.set(jobId, JSON.stringify({
         documentId,
         status: 'error',
-        error: remaining === 0 
-          ? 'Analysis limit reached' 
-          : 'Subscription required',
+        error: errorMessage,
         updatedAt: new Date().toISOString()
       }))
 
       return NextResponse.json(
-        { error: 'Analysis limit exceeded' },
+        { error: errorMessage },
         { status: 402 }
       )
     }

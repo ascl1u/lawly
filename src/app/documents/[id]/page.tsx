@@ -15,6 +15,8 @@ import { ResizableLayout } from '@/components/resizable-layout'
 // import { DocumentOutline } from '@/components/document-outline'
 import { Switch } from "@/components/ui/switch"
 // import { Button } from '@/components/ui/button'
+import { LimitReachedMessage } from '@/components/limit-reached-message'
+import { SubscriptionTier } from '@/types/supabase'
 
 export default function DocumentPage() {
   const { id } = useParams()
@@ -28,6 +30,10 @@ export default function DocumentPage() {
   const [jobId, setJobId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [showDocument, setShowDocument] = useState(true)
+  const [userTier, setUserTier] = useState<SubscriptionTier>('free')
+  const [analysisLimit, setAnalysisLimit] = useState(0)
+  const [resetCycle, setResetCycle] = useState<string | null>(null)
+  const [isLimitReached, setIsLimitReached] = useState(false)
   // const [showOutline, setShowOutline] = useState(true)
 
   useEffect(() => {
@@ -47,7 +53,14 @@ export default function DocumentPage() {
         console.log('📊 Poll result:', job)
         
         if (job.status === 'error') {
-          setError(job.error || 'Analysis limit reached')
+          const errorMessage = job.error || 'Analysis limit reached'
+          setError(errorMessage)
+          
+          // Check if the error is related to limits
+          if (errorMessage.includes('limit')) {
+            setIsLimitReached(true)
+          }
+          
           setJobId(null)
           setIsProcessing(false)
           return true
@@ -70,6 +83,19 @@ export default function DocumentPage() {
       if (!user || isDeleted) return true;
 
       try {
+        // Fetch user data to get tier and limits
+        const { data: userData } = await supabase
+          .from('users')
+          .select('tier, analysis_limit, reset_cycle')
+          .eq('id', user.id)
+          .single();
+          
+        if (userData) {
+          setUserTier(userData.tier)
+          setAnalysisLimit(userData.analysis_limit)
+          setResetCycle(userData.reset_cycle)
+        }
+
         const { data: document, error } = await supabase
           .from('documents')
           .select('*')
@@ -91,6 +117,15 @@ export default function DocumentPage() {
         }
 
         console.log('Fetched document:', document)
+
+        // Check if document has an error related to limits
+        if (document.status === 'error' && document.error_message) {
+          setError(document.error_message)
+          
+          if (document.error_message.includes('limit')) {
+            setIsLimitReached(true)
+          }
+        }
 
         // Only start polling if document is in pending or parsing state
         if (document.status === 'pending' || document.status === 'parsing') {
@@ -166,6 +201,20 @@ export default function DocumentPage() {
             <div className="text-2xl font-semibold text-foreground mb-2">Loading...</div>
             <div className="text-muted-foreground">Please wait while we load your document</div>
           </div>
+        </div>
+      </Container>
+    )
+  }
+
+  if (isLimitReached) {
+    return (
+      <Container className="h-[calc(100vh-4rem)]">
+        <div className="h-full flex items-center justify-center">
+          <LimitReachedMessage 
+            tier={userTier} 
+            limit={analysisLimit}
+            resetCycle={resetCycle || undefined}
+          />
         </div>
       </Container>
     )
