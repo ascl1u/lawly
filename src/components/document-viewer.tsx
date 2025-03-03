@@ -16,6 +16,8 @@ import {
   // PaginationPrevious,
 } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button";
+import { AlertCircle, FileText } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Configure worker with correct URL
 if (typeof window !== 'undefined') {
@@ -35,6 +37,7 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPdf, setIsPdf] = useState(false);
+  const [fileType, setFileType] = useState<string>('');
 
   // Load PDF document
   useEffect(() => {
@@ -43,6 +46,10 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
 
       try {
         setLoading(true);
+        
+        // Get file extension
+        const fileExtension = doc.file_name.split('.').pop()?.toLowerCase() || '';
+        setFileType(fileExtension);
         
         // Use the encoded_file_name if available, otherwise fall back to file_name
         const fileName = doc.encoded_file_name || doc.file_name;
@@ -57,7 +64,7 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
 
         if (downloadError) throw downloadError;
 
-        const isPdfFile = doc.file_name.toLowerCase().endsWith(".pdf");
+        const isPdfFile = fileExtension === 'pdf';
         setIsPdf(isPdfFile);
 
         if (isPdfFile) {
@@ -86,7 +93,7 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
   // Load specific page
   useEffect(() => {
     const loadPage = async () => {
-      if (!pdf || !doc.file_name.toLowerCase().endsWith(".pdf")) return;
+      if (!pdf || !isPdf) return;
 
       try {
         setLoading(true);
@@ -112,10 +119,22 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
     };
 
     loadPage();
-  }, [pdf, currentPage, doc.file_name]);
+  }, [pdf, currentPage, isPdf]);
 
   const handlePrevPage = () => setCurrentPage(p => Math.max(1, p - 1));
   const handleNextPage = () => setCurrentPage(p => Math.min(totalPages, p + 1));
+
+  // Get a user-friendly file type name
+  const getFileTypeName = (type: string): string => {
+    switch (type.toLowerCase()) {
+      case 'pdf': return 'PDF';
+      case 'docx': return 'Word Document';
+      case 'doc': return 'Word Document';
+      case 'txt': return 'Text File';
+      case 'rtf': return 'Rich Text Format';
+      default: return type.toUpperCase();
+    }
+  };
 
   if (error) return <div className="flex items-center justify-center h-full">Error: {error}</div>;
   if (loading) return <div className="flex items-center justify-center h-full">Loading...</div>;
@@ -138,8 +157,24 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
                   />
                 )
               ) : (
-                <div className="prose prose-primary max-w-none whitespace-pre-wrap">
-                  {pageContent}
+                <div className="prose prose-primary max-w-none">
+                  {/* Display notification for non-PDF files */}
+                  <Alert className="mb-6">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Document Preview Not Available</AlertTitle>
+                    <AlertDescription>
+                      Direct preview is not available for {getFileTypeName(fileType)} files. 
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="flex items-center gap-2 mb-4 text-primary">
+                    <FileText className="h-5 w-5" />
+                    <span className="font-medium">{doc.file_name}</span>
+                  </div>
+                  
+                  <div className="whitespace-pre-wrap">
+                    {pageContent || 'No content available'}
+                  </div>
                 </div>
               )}
             </CardContent>
