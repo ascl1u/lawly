@@ -11,14 +11,15 @@ interface SearchParams {
 export default async function SuccessPage({
   searchParams,
 }: {
-  searchParams: SearchParams
+  searchParams: Promise<SearchParams>
 }) {
   const session = await auth()
   if (!session?.user?.id) {
     return redirect('/login')
   }
 
-  const sessionId = searchParams.session_id
+  const resolvedSearchParams = await searchParams
+  const sessionId = resolvedSearchParams.session_id
   
   if (!sessionId) {
     return redirect('/dashboard')
@@ -67,7 +68,7 @@ export default async function SuccessPage({
         } else {
           console.log('✅ User record updated directly:', {
             tier: subscriptionData.tier,
-            analysis_limit: subscriptionData.analysisLimit
+            analysisLimit: subscriptionData.analysisLimit
           })
         }
       }
