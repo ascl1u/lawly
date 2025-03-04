@@ -4,17 +4,24 @@ import { redis, REDIS_KEYS } from '@/lib/redis/client'
 import { syncStripeDataToKV } from '@/lib/stripe/sync'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+interface SearchParams {
+  session_id?: string
+}
+
 export default async function SuccessPage({
-  searchParams
+  searchParams,
 }: {
-  searchParams: { session_id?: string }
+  searchParams: Promise<SearchParams> | SearchParams
 }) {
   const session = await auth()
   if (!session?.user?.id) {
     return redirect('/login')
   }
 
-  const sessionId = await searchParams.session_id
+  // Handle searchParams as either a Promise or a direct object (for backward compatibility)
+  const resolvedSearchParams = searchParams instanceof Promise ? await searchParams : searchParams
+  const sessionId = resolvedSearchParams.session_id
+  
   if (!sessionId) {
     return redirect('/dashboard')
   }
