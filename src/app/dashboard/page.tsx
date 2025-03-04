@@ -13,8 +13,8 @@ export default async function DashboardPage() {
   
   // Extract usage data from subscription
   const usageData = {
-    used: subscription?.users?.analysis_usage || 0,
-    limit: subscription?.users?.analysis_limit || 1,
+    used: subscription?.analysisUsage || 0,
+    limit: subscription?.analysisLimit || 1,
     tier: subscription?.tier || 'free',
     resetDate: subscription?.currentPeriodEnd
   }

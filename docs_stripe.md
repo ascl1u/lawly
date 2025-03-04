@@ -1,163 +1,250 @@
-Interactive webhook endpoint builder
-View the text-based guide
-Learn how to set up and deploy a webhook event destination to listen to events from Stripe. Use webhook event destinations for post-payment commerce events such as sending custom email receipts, fulfilling orders, or updating your database. Do these steps in test mode or a sandbox before doing them in live mode.
+Pre-requirements
+TypeScript
+Some type of JS backend
+Working auth (that is verified on your JS backend)
+A KV store (I use Redis, usually Upstash, but any KV will work)
+General philosophy
+IMO, the biggest issue with Stripe is the "split brain" it inherently introduces to your code base. When a customer checks out, the "state of the purchase" is in Stripe. You're then expected to track the purchase in your own database via webhooks.
 
+There are over 258 event types. They all have different amounts of data. The order you get them is not guaranteed. None of them should be trusted. It's far too easy to have a payment be failed in stripe and "subscribed" in your app.
 
-Download full app
-Don't code? Use Stripe’s no-code options or get help from our partners.
-1
-Set up an endpoint
-Install the Stripe Python package
-Install the Stripe package and import it in your code. Alternatively, if you’re starting from scratch and need a requirements.txt file, download the project files using the link in the code editor.
+These partial updates and race conditions are obnoxious. I recommend avoiding them entirely. My solution is simple: a single syncStripeDataToKV(customerId: string) function that syncs all of the data for a given Stripe customer to your KV.
 
+The following is how I (mostly) avoid getting Stripe into these awful split states.
 
-pip
+The Flow
+This is a quick overview of the "flow" I recommend. More detail below. Even if you don't copy my specific implementation, you should read this. I promise all of these steps are necessary. Skipping any of them will make life unnecessarily hard
 
-GitHub
-Install the package via pip:
+FRONTEND: "Subscribe" button should call a "generate-stripe-checkout" endpoint onClick
+USER: Clicks "subscribe" button on your app
+BACKEND: Create a Stripe customer
+BACKEND: Store binding between Stripe's customerId and your app's userId
+BACKEND: Create a "checkout session" for the user
+With the return URL set to a dedicated /success route in your app
+USER: Makes payment, subscribes, redirects back to /success
+FRONTEND: On load, triggers a syncAfterSuccess function on backend (hit an API, server action, rsc on load, whatever)
+BACKEND: Uses userId to get Stripe customerId from KV
+BACKEND: Calls syncStripeDataToKV with customerId
+FRONTEND: After sync succeeds, redirects user to wherever you want them to be :)
+BACKEND: On all relevant events, calls syncStripeDataToKV with customerId
+This might seem like a lot. That's because it is. But it's also the simplest Stripe setup I've ever seen work.
 
-pip3 install stripe
+Let's go into the details on the important parts here.
 
-Server
-Create a new endpoint
-A webhook endpoint is a destination on your server that receives requests from Stripe, notifying you about events that happen on your account such as a customer disputing a charge or a successful recurring payment. Add a new endpoint to your server and make sure it’s publicly accessible so we can send unauthenticated POST requests.
+Checkout flow
+The key is to make sure you always have the customer defined BEFORE YOU START CHECKOUT. The ephemerality of "customer" is a straight up design flaw and I have no idea why they built Stripe like this.
 
-Server
-2
-Handle requests from Stripe
-Read the event data
-Stripe sends the event data in the request body. Each event is structured as an Event object with a type, id, and related Stripe resource nested under data.
+Here's an adapted example from how we're doing it in T3 Chat.
 
-Server
-Handle the event
-As soon as you have the event object, check the type to know what kind of event happened. You can use one webhook to handle several different event types at once, or set up individual endpoints for specific events.
+export async function GET(req: Request) {
+  const user = auth(req);
 
-Server
-Return a 200 response
-Send a successful 200 response to Stripe as quickly as possible because Stripe retries the event if a response isn’t sent within a reasonable time. Write any long-running processes as code that can run asynchronously outside the webhook endpoint.
+  // Get the stripeCustomerId from your KV store
+  let stripeCustomerId = await kv.get(`stripe:user:${user.id}`);
 
-Server
-3
-Test the webhook
-Run the server
-Build and run your server to test the endpoint at http://localhost:4242/webhook.
+  // Create a new Stripe customer if this user doesn't have one
+  if (!stripeCustomerId) {
+    const newCustomer = await stripe.customers.create({
+      email: user.email,
+      metadata: {
+        userId: user.id, // DO NOT FORGET THIS
+      },
+    });
 
-python3 -m flask --app server run --port=4242
+    // Store the relation between userId and stripeCustomerId in your KV
+    await kv.set(`stripe:user:${user.id}`, newCustomer.id);
+    stripeCustomerId = newCustomer.id;
+  }
 
-Server
-Download the CLI
-Use the Stripe CLI to test your webhook locally. Download the CLI and log in with your Stripe account. Alternatively, use a service like ngrok to make your local endpoint publicly accessible.
+  // ALWAYS create a checkout with a stripeCustomerId. They should enforce this.
+  const checkout = await stripe.checkout.sessions.create({
+    customer: stripeCustomerId,
+    success_url: "https://t3.chat/success",
+    ...
+  });
+syncStripeDataToKV
+This is the function that syncs all of the data for a given Stripe customer to your KV. It will be used in both your /success endpoint and in your /api/stripe webhook handler.
 
-stripe login
+The Stripe api returns a ton of data, much of which can not be serialized to JSON. I've selected the "most likely to be needed" chunk here for you to use, and there's a type definition later in the file.
 
-Run in the Stripe Shell
-Server
-Forward events to your webhook
-Set up event forwarding with the CLI to send all Stripe events in test mode to your local webhook endpoint.
+Your implementation will vary based on if you're doing subscriptions or one-time purchases. The example below is with subcriptions (again from T3 Chat).
 
-stripe listen --forward-to localhost:4242/webhook
+// The contents of this function should probably be wrapped in a try/catch
+export async function syncStripeDataToKV(customerId: string) {
+  // Fetch latest subscription data from Stripe
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    limit: 1,
+    status: "all",
+    expand: ["data.default_payment_method"],
+  });
 
-Run in the Stripe Shell
-Server
-Simulate events
-Use the CLI to simulate specific events that test your webhook application logic by sending a POST request to your webhook endpoint with a mocked Stripe event object.
+  if (subscriptions.data.length === 0) {
+    const subData = { status: "none" };
+    await kv.set(`stripe:customer:${customerId}`, subData);
+    return subData;
+  }
 
-stripe trigger payment_intent.succeeded
+  // If a user can have multiple subscriptions, that's your problem
+  const subscription = subscriptions.data[0];
 
-Run in the Stripe Shell
-Server
-4
-Secure your webhook
-Secure your webhook
-Verify the source of a webhook request to prevent bad actors from sending fake payloads or injecting SQL that modify your backend systems. Secure your webhook with a client signature to validate that Stripe generated a webhook request and that it didn’t come from a server acting like Stripe.
+  // Store complete subscription state
+  const subData = {
+    subscriptionId: subscription.id,
+    status: subscription.status,
+    priceId: subscription.items.data[0].price.id,
+    currentPeriodEnd: subscription.current_period_end,
+    currentPeriodStart: subscription.current_period_start,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    paymentMethod:
+      subscription.default_payment_method &&
+      typeof subscription.default_payment_method !== "string"
+        ? {
+            brand: subscription.default_payment_method.card?.brand ?? null,
+            last4: subscription.default_payment_method.card?.last4 ?? null,
+          }
+        : null,
+  };
 
-Server
-Add the endpoint signing secret
-Each webhook endpoint has a unique signing secret. Find the secret in the webhooks section of the Dashboard, or, if you’re testing locally with the Stripe CLI, from the CLI output with the command stripe listen.
+  // Store the data in your KV
+  await kv.set(`stripe:customer:${customerId}`, subData);
+  return subData;
+}
+/success endpoint
+Note
 
-Server
-Verify the event
-Use the Stripe library to verify and construct the event from Stripe. You need the endpoint secret, the request headers, and the raw request body to properly verify the event. Alternatively, you can manually verify the signature without having to use the Stripe library.
+While this isn't 'necessary', there's a good chance your user will make it back to your site before the webhooks do. It's a nasty race condition to handle. Eagerly calling syncStripeDataToKV will prevent any weird states you might otherwise end up in
 
-Server
-Read the request signature
-Each request from Stripe contains a Stripe-Signature header. Store a reference to this header value for later use.
+This is the page that the user is redirected to after they complete their checkout. For the sake of simplicity, I'm going to implement it as a get route that redirects them. In my apps, I do this with a server component and Suspense, but I'm not going to spend the time explaining all that here.
 
-Server
-Verify the request
-Use the Stripe library to verify that the request came from Stripe. Pass the raw request body, Stripe-Signature header, and endpoint secret to construct an Event.
+export async function GET(req: Request) {
+  const user = auth(req);
+  const stripeCustomerId = await kv.get(`stripe:user:${user.id}`);
+  if (!stripeCustomerId) {
+    return redirect("/");
+  }
 
-Server
-Handle errors
-Checking for errors helps catch improperly configured webhooks or malformed requests from non-Stripe services. Common errors include using the wrong endpoint secret, passing a parsed representation (for example, JSON) of the request body, or reading the wrong request header.
+  await syncStripeDataToKV(stripeCustomerId);
+  return redirect("/");
+}
+Notice how I'm not using any of the CHECKOUT_SESSION_ID stuff? That's because it sucks and it encourages you to implement 12 different ways to get the Stripe state. Ignore the siren calls. Have a SINGLE syncStripeDataToKV function. It will make your life easier.
 
-Server
-Test the endpoint
-Test your secured endpoint by using the Stripe CLI, which sends the proper signature header in each test event.
+/api/stripe (The Webhook)
+This is the part everyone hates the most. I'm just gonna dump the code and justify myself later.
 
-Server
-Next steps
-Going live
-Learn how to deploy your webhook endpoint to production and handle events at scale by only sending the specific events you need.
+export async function POST(req: Request) {
+  const body = await req.text();
+  const signature = (await headers()).get("Stripe-Signature");
 
-Best practices
-Understand best practices for maintaining your endpoint, such as managing retries or duplicate events.
+  if (!signature) return NextResponse.json({}, { status: 400 });
 
-Stripe CLI
-The Stripe CLI has several commands that can help test your Stripe application beyond webhooks.
+  async function doEventProcessing() {
+    if (typeof signature !== "string") {
+      throw new Error("[STRIPE HOOK] Header isn't a string???");
+    }
 
-#! /usr/bin/env python3.6
-# Python 3.6 or newer required.
+    const event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
 
-import json
-import os
-import stripe
-# This is your test secret API key.
-stripe.api_key = 'sk_test_51Qu227BaoZfv78XzAPnv3CoWQ2lgpzQAuQIa1MPBt2j6pXa1sWDtiHXsQhl1XjHUBcamDEJpGZeuyAjXnYgxKw8I00rFwsbq42'
+    waitUntil(processEvent(event));
+  }
 
-# Replace this endpoint secret with your endpoint's unique secret
-# If you are testing with the CLI, find the secret by running 'stripe listen'
-# If you are using an endpoint defined with the API or dashboard, look in your webhook settings
-# at https://dashboard.stripe.com/webhooks
-endpoint_secret = 'whsec_...'
-from flask import Flask, jsonify, request
+  const { error } = await tryCatch(doEventProcessing());
 
-app = Flask(__name__)
+  if (error) {
+    console.error("[STRIPE HOOK] Error processing event", error);
+  }
 
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    event = None
-    payload = request.data
+  return NextResponse.json({ received: true });
+}
+Note
 
-    try:
-        event = json.loads(payload)
-    except json.decoder.JSONDecodeError as e:
-        print('⚠️  Webhook error while parsing basic request.' + str(e))
-        return jsonify(success=False)
-    if endpoint_secret:
-        # Only verify the event if there is an endpoint secret defined
-        # Otherwise use the basic event deserialized with json
-        sig_header = request.headers.get('stripe-signature')
-        try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, endpoint_secret
-            )
-        except stripe.error.SignatureVerificationError as e:
-            print('⚠️  Webhook signature verification failed.' + str(e))
-            return jsonify(success=False)
+If you are using Next.js Pages Router, make sure you turn this on. Stripe expects the body to be "untouched" so it can verify the signature.
 
-    # Handle the event
-    if event and event['type'] == 'payment_intent.succeeded':
-        payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
-        print('Payment for {} succeeded'.format(payment_intent['amount']))
-        # Then define and call a method to handle the successful payment intent.
-        # handle_payment_intent_succeeded(payment_intent)
-    elif event['type'] == 'payment_method.attached':
-        payment_method = event['data']['object']  # contains a stripe.PaymentMethod
-        # Then define and call a method to handle the successful attachment of a PaymentMethod.
-        # handle_payment_method_attached(payment_method)
-    else:
-        # Unexpected event type
-        print('Unhandled event type {}'.format(event['type']))
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+processEvent
+This is the function called in the endpoint that actually takes the Stripe event and updates the KV.
 
-    return jsonify(success=True)
+async function processEvent(event: Stripe.Event) {
+  // Skip processing if the event isn't one I'm tracking (list of all events below)
+  if (!allowedEvents.includes(event.type)) return;
+
+  // All the events I track have a customerId
+  const { customer: customerId } = event?.data?.object as {
+    customer: string; // Sadly TypeScript does not know this
+  };
+
+  // This helps make it typesafe and also lets me know if my assumption is wrong
+  if (typeof customerId !== "string") {
+    throw new Error(
+      `[STRIPE HOOK][CANCER] ID isn't string.\nEvent type: ${event.type}`
+    );
+  }
+
+  return await syncStripeDataToKV(customerId);
+}
+Events I Track
+If there are more I should be tracking for updates, please file a PR. If they don't affect subscription state, I do not care.
+
+const allowedEvents: Stripe.Event.Type[] = [
+  "checkout.session.completed",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "customer.subscription.paused",
+  "customer.subscription.resumed",
+  "customer.subscription.pending_update_applied",
+  "customer.subscription.pending_update_expired",
+  "customer.subscription.trial_will_end",
+  "invoice.paid",
+  "invoice.payment_failed",
+  "invoice.payment_action_required",
+  "invoice.upcoming",
+  "invoice.marked_uncollectible",
+  "invoice.payment_succeeded",
+  "payment_intent.succeeded",
+  "payment_intent.payment_failed",
+  "payment_intent.canceled",
+];
+Custom Stripe subscription type
+export type STRIPE_SUB_CACHE =
+  | {
+      subscriptionId: string | null;
+      status: Stripe.Subscription.Status;
+      priceId: string | null;
+      currentPeriodStart: number | null;
+      currentPeriodEnd: number | null;
+      cancelAtPeriodEnd: boolean;
+      paymentMethod: {
+        brand: string | null; // e.g., "visa", "mastercard"
+        last4: string | null; // e.g., "4242"
+      } | null;
+    }
+  | {
+      status: "none";
+    };
+More Pro Tips
+Gonna slowly drop more things here as I remember them.
+
+DISABLE "CASH APP PAY".
+I'm convinced this is literally just used by scammers. over 90% of my cancelled transactions are Cash App Pay. image
+
+ENABLE "Limit customers to one subscription"
+This is a really useful hidden setting that has saved me a lot of headaches and race conditions. Fun fact: this is the ONLY way to prevent someone from being able to check out twice if they open up two checkout sessions 🙃 More info in Stripe's docs here
+
+Things that are still your problem
+While I have solved a lot of stuff here, in particular the "subscription" flows, there are a few things that are still your problem. Those include...
+
+Managing STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY env vars for both testing and production
+Managing STRIPE_PRICE_IDs for all subscription tiers for dev and prod (I can't believe this is still a thing)
+Exposing sub data from your KV to your user (a dumb endpoint is probably fine)
+Tracking "usage" (i.e. a user gets 100 messages per month)
+Managing "free trials" ...the list goes on
+Regardless, I hope you found some value in this doc.

@@ -1,5 +1,6 @@
 import type { Stripe } from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { stripe } from './server'
 
 export async function handleSubscriptionChange(
   event: Stripe.Event,
@@ -33,23 +34,6 @@ export async function handleSubscriptionChange(
           tier
         })
         
-        // Update subscription record
-        const { error: updateError } = await supabase
-          .from('subscriptions')
-          .update({
-            status: subscription.status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            cancel_at_period_end: subscription.cancel_at_period_end,
-            price_id: priceId
-          })
-          .eq('stripe_subscription_id', subscription.id)
-        
-        if (updateError) {
-          console.error('❌ Failed to update subscription:', updateError)
-          throw updateError
-        }
-        
         // Get the user ID from metadata or database
         let userId = subscription.metadata?.userId || subscription.metadata?.user_id
         
@@ -69,39 +53,83 @@ export async function handleSubscriptionChange(
           userId = subData.user_id
         }
         
-        // If subscription is canceled at period end, we don't change the tier yet
-        // The user keeps pro benefits until the end of the period
-        if (subscription.cancel_at_period_end) {
-          console.log('ℹ️ Subscription set to cancel at period end:', {
-            userId,
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString()
-          })
+        try {
+          // Use a transaction to update both subscription and user records atomically
+          const { data, error } = await supabase.rpc('handle_subscription_update', {
+            p_user_id: userId,
+            p_subscription_id: subscription.id,
+            p_status: subscription.status,
+            p_current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+            p_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            p_cancel_at_period_end: subscription.cancel_at_period_end,
+            p_price_id: priceId,
+            p_tier: tier,
+            p_analysis_limit: tier === 'pro' ? 30 : 1
+          });
           
-          // No immediate changes to user tier or analysis limit
-        } 
-        // If subscription status changed (not just cancel_at_period_end flag)
-        else if (['active', 'trialing'].includes(subscription.status)) {
-          // Update user tier for active subscriptions
-          const analysisLimit = tier === 'pro' ? 30 : 1
-          
-          const { error: userError } = await supabase
-            .from('users')
-            .update({ 
-              tier,
-              analysis_limit: analysisLimit
-            })
-            .eq('id', userId)
-          
-          if (userError) {
-            console.error('❌ Failed to update user tier:', userError)
-            throw userError
+          if (error) {
+            console.error('❌ Failed to update subscription and user:', error);
+            throw error;
           }
           
-          console.log('✅ User tier and analysis limit updated:', {
-            userId,
-            tier,
-            analysisLimit
-          })
+          console.log('✅ Subscription and user updated successfully:', data);
+        } catch (error) {
+          console.error('❌ Error in subscription update transaction:', error);
+          
+          // Fallback to separate updates if transaction fails
+          console.log('⚠️ Falling back to separate updates');
+          
+          // Update subscription record
+          const { error: updateError } = await supabase
+            .from('subscriptions')
+            .update({
+              status: subscription.status,
+              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              cancel_at_period_end: subscription.cancel_at_period_end,
+              price_id: priceId
+            })
+            .eq('stripe_subscription_id', subscription.id)
+          
+          if (updateError) {
+            console.error('❌ Failed to update subscription:', updateError)
+            throw updateError
+          }
+          
+          // If subscription is canceled at period end, we don't change the tier yet
+          // The user keeps pro benefits until the end of the period
+          if (subscription.cancel_at_period_end) {
+            console.log('ℹ️ Subscription set to cancel at period end:', {
+              userId,
+              currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString()
+            })
+            
+            // No immediate changes to user tier or analysis limit
+          } 
+          // If subscription status changed (not just cancel_at_period_end flag)
+          else if (['active', 'trialing'].includes(subscription.status)) {
+            // Update user tier for active subscriptions
+            const analysisLimit = tier === 'pro' ? 30 : 1
+            
+            const { error: userError } = await supabase
+              .from('users')
+              .update({ 
+                tier,
+                analysis_limit: analysisLimit
+              })
+              .eq('id', userId)
+            
+            if (userError) {
+              console.error('❌ Failed to update user tier:', userError)
+              throw userError
+            }
+            
+            console.log('✅ User tier and analysis limit updated:', {
+              userId,
+              tier,
+              analysisLimit
+            })
+          }
         }
         
         break
@@ -134,39 +162,60 @@ export async function handleSubscriptionChange(
           userId = subData.user_id
         }
         
-        // Update subscription record
-        const { error: updateError } = await supabase
-          .from('subscriptions')
-          .update({
-            status: 'canceled',
-            cancel_at_period_end: false,
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
+        try {
+          // Use a transaction to update both subscription and user records atomically
+          const { data, error } = await supabase.rpc('handle_subscription_deletion', {
+            p_user_id: userId,
+            p_subscription_id: subscription.id,
+            p_current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
+          });
+          
+          if (error) {
+            console.error('❌ Failed to process subscription deletion:', error);
+            throw error;
+          }
+          
+          console.log('✅ Subscription deletion processed successfully:', data);
+        } catch (error) {
+          console.error('❌ Error in subscription deletion transaction:', error);
+          
+          // Fallback to separate updates if transaction fails
+          console.log('⚠️ Falling back to separate updates');
+          
+          // Update subscription record
+          const { error: updateError } = await supabase
+            .from('subscriptions')
+            .update({
+              status: 'canceled',
+              cancel_at_period_end: false,
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
+            })
+            .eq('stripe_subscription_id', subscription.id)
+          
+          if (updateError) {
+            console.error('❌ Failed to update subscription:', updateError)
+            throw updateError
+          }
+          
+          // Always downgrade to free tier when subscription is fully deleted
+          const { error: userError } = await supabase
+            .from('users')
+            .update({ 
+              tier: 'free',
+              analysis_limit: 1 // Free tier limit
+            })
+            .eq('id', userId)
+          
+          if (userError) {
+            console.error('❌ Failed to update user tier:', userError)
+            throw userError
+          }
+          
+          console.log('✅ User downgraded to free tier:', {
+            userId,
+            analysisLimit: 1
           })
-          .eq('stripe_subscription_id', subscription.id)
-        
-        if (updateError) {
-          console.error('❌ Failed to update subscription:', updateError)
-          throw updateError
         }
-        
-        // Always downgrade to free tier when subscription is fully deleted
-        const { error: userError } = await supabase
-          .from('users')
-          .update({ 
-            tier: 'free',
-            analysis_limit: 1 // Free tier limit
-          })
-          .eq('id', userId)
-        
-        if (userError) {
-          console.error('❌ Failed to update user tier:', userError)
-          throw userError
-        }
-        
-        console.log('✅ User downgraded to free tier:', {
-          userId,
-          analysisLimit: 1
-        })
         
         break
       }
@@ -217,77 +266,73 @@ async function handleCheckoutCompletion(session: Stripe.Checkout.Session, supaba
     // Get the subscription ID from the session
     const subscriptionId = session.subscription as string;
     
-    // Calculate expiration date
-    const expiresAt = session.expires_at 
-      ? new Date(session.expires_at * 1000).toISOString()
-      : null;
-    
-    console.log('💾 Upserting subscription with data:', {
-      userId,
-      customerId,
-      subscriptionId,
-      sessionId: session.id,
-      tier,
-      priceId,
-      expiresAt
-    });
-
-    const { error } = await supabase
-      .from('subscriptions')
-      .upsert({
-        user_id: userId,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscriptionId,
-        stripe_checkout_session_id: session.id,
-        status: 'active',
-        price_id: priceId,
-        current_period_end: expiresAt
-      }, 
-      { onConflict: 'user_id' });
-
-    if (error) {
-      console.error('❌ Failed to upsert subscription:', error);
-      throw error;
+    if (!subscriptionId) {
+      console.error('❌ Missing subscription ID in session');
+      throw new Error('Missing subscription ID in session');
     }
-
-    console.log('✅ Subscription record updated successfully');
-
+    
+    // Fetch the actual subscription from Stripe to get accurate period end
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+    // Calculate proper period end from the actual subscription
+    const currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000).toISOString();
+    const currentPeriodStart = new Date(stripeSubscription.current_period_start * 1000).toISOString();
+    
+    console.log('📅 Subscription periods:', {
+      currentPeriodStart,
+      currentPeriodEnd
+    });
+    
     // Set analysis limit based on tier
     const analysisLimit = tier === 'pro' ? 30 : 1;
     
-    // Update user tier and analysis limit
-    const { error: userError } = await supabase
-      .from('users')
-      .update({ 
-        tier,
-        analysis_limit: analysisLimit
-      })
-      .eq('id', userId);
-
-    if (userError) {
-      console.error('❌ Failed to update user tier:', userError);
-      throw userError;
-    }
-
-    console.log('✅ User tier and analysis limit updated successfully:', {
-      tier,
-      analysisLimit
+    // Begin a Supabase transaction to ensure atomic updates
+    const { data, error } = await supabase.rpc('handle_checkout_completion', {
+      p_user_id: userId,
+      p_customer_id: customerId,
+      p_subscription_id: subscriptionId,
+      p_session_id: session.id,
+      p_price_id: priceId,
+      p_tier: tier,
+      p_analysis_limit: analysisLimit,
+      p_current_period_start: currentPeriodStart,
+      p_current_period_end: currentPeriodEnd
     });
     
-    // Verify the update
+    if (error) {
+      console.error('❌ Transaction failed:', error);
+      throw error;
+    }
+    
+    console.log('✅ Transaction completed successfully:', data);
+
+    // Verify the update with a fresh query
     const { data: verifyData, error: verifyError } = await supabase
-      .from('subscriptions')
-      .select('status, price_id, stripe_checkout_session_id')
-      .eq('user_id', userId)
+      .from('users')
+      .select(`
+        tier, 
+        analysis_limit,
+        subscriptions:subscriptions(
+          status,
+          price_id,
+          current_period_end,
+          stripe_checkout_session_id
+        )
+      `)
+      .eq('id', userId)
       .single();
 
     if (verifyError) {
-      console.error('❌ Failed to verify subscription update:', verifyError);
+      console.error('❌ Failed to verify updates:', verifyError);
     } else {
-      console.log('✅ Verified subscription update:', {
-        status: verifyData.status,
-        priceId: verifyData.price_id,
-        sessionId: verifyData.stripe_checkout_session_id
+      const subscription = verifyData.subscriptions?.[0] || {};
+      console.log('✅ Verified updates:', {
+        tier: verifyData.tier,
+        analysisLimit: verifyData.analysis_limit,
+        subscriptionStatus: subscription.status,
+        priceId: subscription.price_id,
+        currentPeriodEnd: subscription.current_period_end,
+        sessionId: subscription.stripe_checkout_session_id
       });
     }
   } catch (error) {

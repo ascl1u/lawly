@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner'
 import { UserSubscription } from '@/lib/stripe/subscription'
 import { formatDate } from '@/lib/utils'
+import { SyncSubscriptionButton } from './sync-button'
 
 interface SubscriptionCardProps {
   subscription: UserSubscription | null
@@ -53,8 +54,8 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p>Analysis limit: {subscription?.users.analysis_limit || 1} per month</p>
-          <p>Usage: {subscription?.users.analysis_usage || 0} used this month</p>
+          <p>Analysis limit: {subscription?.analysisLimit || 1} per month</p>
+          <p>Usage: {subscription?.analysisUsage || 0} used this month</p>
         </CardContent>
         <CardFooter>
           <Button 
@@ -71,7 +72,7 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
   // Get button text based on subscription state
   const getButtonText = () => {
     if (isLoading) return 'Loading...'
-    if (subscription.cancel_at_period_end) return 'Update Subscription'
+    if (subscription.cancelAtPeriodEnd) return 'Update Subscription'
     return 'Manage Subscription'
   }
 
@@ -83,7 +84,7 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
         <CardDescription>
           {subscription.status === 'trialing' 
             ? 'Your trial ends soon' 
-            : subscription.cancel_at_period_end 
+            : subscription.cancelAtPeriodEnd 
               ? 'Your subscription will end at the current period end'
               : 'Your subscription renews automatically'}
         </CardDescription>
@@ -91,22 +92,22 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
       <CardContent>
         <div className="space-y-2">
           <p>Status: <span className="font-medium capitalize">{subscription.status}</span>
-            {subscription.cancel_at_period_end && (
+            {subscription.cancelAtPeriodEnd && (
               <span className="ml-2 text-amber-600 font-medium">(Canceling)</span>
             )}
           </p>
-          <p>Analysis limit: <span className="font-medium">{subscription.users.analysis_limit}</span> per month</p>
-          <p>Usage: <span className="font-medium">{subscription.users.analysis_usage}</span> used this month</p>
+          <p>Analysis limit: <span className="font-medium">{subscription.analysisLimit}</span> per month</p>
+          <p>Usage: <span className="font-medium">{subscription.analysisUsage}</span> used this month</p>
           {subscription.currentPeriodEnd && (
             <p>
-              {subscription.cancel_at_period_end 
+              {subscription.cancelAtPeriodEnd 
                 ? 'Expires' 
                 : 'Renews'}: <span className="font-medium">{formatDate(subscription.currentPeriodEnd)}</span>
             </p>
           )}
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex justify-between">
         <Button 
           variant="outline"
           onClick={handleManageSubscription}
@@ -114,6 +115,7 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
         >
           {getButtonText()}
         </Button>
+        <SyncSubscriptionButton />
       </CardFooter>
     </Card>
   )

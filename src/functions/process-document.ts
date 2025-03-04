@@ -2,25 +2,20 @@ import { supabaseAdmin } from '@/lib/config'
 import { DocumentLoader } from '@/lib/document-loader'
 import { analyzeDocument } from '@/lib/ai-service'
 import { generateUUID } from '@/lib/utils'
-import { redis } from '@/lib/queue'
+import { updateJobStatus } from '@/lib/redis/client'
 import { incrementAnalysisUsage, checkAnalysisUsage } from '@/lib/usage'
 
 export async function processDocument(documentId: string) {
   console.log('=== PROCESS DOCUMENT START ===', { documentId })
   console.time('total-processing-time')
-  const jobId = `doc:${documentId}`
 
   const updateStatus = async (status: string, error?: string) => {
     console.log('Updating status:', { status, error })
     
     // Update both Redis and Supabase
     await Promise.all([
-      redis.set(jobId, JSON.stringify({
-        documentId,
-        status,
-        error,
-        updatedAt: new Date().toISOString()
-      })),
+      updateJobStatus(documentId, status === 'error' ? 'failed' : 
+                              status === 'analyzed' ? 'completed' : 'processing', error),
       supabaseAdmin
         .from('documents')
         .update({ 

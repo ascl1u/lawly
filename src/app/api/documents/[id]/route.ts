@@ -1,13 +1,13 @@
-import { redis } from '@/lib/queue'
+import { redis, REDIS_KEYS } from '@/lib/redis/client'
 import { NextResponse } from 'next/server'
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
-    const { id } = await params  // Await the params promise here
-    const jobId = `doc:${id}`
+    const { id } = await params
+    const jobId = REDIS_KEYS.DOCUMENT_JOB(id)
     await redis.del(jobId)
     return NextResponse.json({ success: true })
   } catch {

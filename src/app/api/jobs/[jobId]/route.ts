@@ -1,11 +1,11 @@
-import { getJobStatus } from '@/lib/queue'
+import { getJobStatus } from '@/lib/redis/client'
 import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ jobId: string }> }
+  { params }: { params: { jobId: string } }
 ): Promise<NextResponse> {
-  const { jobId } = await params
+  const { jobId } = params
 
   try {
     const status = await getJobStatus(jobId)
