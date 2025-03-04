@@ -11,16 +11,14 @@ interface SearchParams {
 export default async function SuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<SearchParams> | SearchParams
+  searchParams: SearchParams
 }) {
   const session = await auth()
   if (!session?.user?.id) {
     return redirect('/login')
   }
 
-  // Handle searchParams as either a Promise or a direct object (for backward compatibility)
-  const resolvedSearchParams = searchParams instanceof Promise ? await searchParams : searchParams
-  const sessionId = resolvedSearchParams.session_id
+  const sessionId = searchParams.session_id
   
   if (!sessionId) {
     return redirect('/dashboard')
@@ -69,7 +67,7 @@ export default async function SuccessPage({
         } else {
           console.log('✅ User record updated directly:', {
             tier: subscriptionData.tier,
-            analysisLimit: subscriptionData.analysisLimit
+            analysis_limit: subscriptionData.analysisLimit
           })
         }
       }
@@ -81,4 +79,4 @@ export default async function SuccessPage({
     console.error('❌ Error syncing subscription data:', error)
     return redirect('/dashboard?error=sync-failed')
   }
-} 
+}
