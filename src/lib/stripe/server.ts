@@ -1,8 +1,8 @@
 import Stripe from 'stripe'
+import { STRIPE_PRICE_IDS } from './constants'
 
-export const STRIPE_PRICE_IDS = {
-  pro: process.env.STRIPE_PRICE_ID_PRO || 'price_123',
-}
+// Re-export for convenience
+export { STRIPE_PRICE_IDS }
 
 // Create a build-time safe version of Stripe
 function createStripeClient() {

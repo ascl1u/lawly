@@ -41,7 +41,7 @@ export async function syncStripeDataToKV(customerId: string): Promise<StripeSubs
     
     // Determine tier and analysis limit based on price ID
     const priceId = subscription.items.data[0]?.price.id
-    const tier = priceId === STRIPE_PRICE_IDS.pro ? 'pro' : 'free'
+    const tier = priceId === STRIPE_PRICE_IDS.PRO ? 'pro' : 'free'
     const analysisLimit = tier === 'pro' ? 30 : 1
 
     // Store complete subscription state

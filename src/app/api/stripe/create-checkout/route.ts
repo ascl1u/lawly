@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     }
 
     // Determine tier based on priceId
-    const tier = priceId === STRIPE_PRICE_IDS.pro ? 'pro' : 'free'
+    const tier = priceId === STRIPE_PRICE_IDS.PRO ? 'pro' : 'free'
     
     console.log('💰 Creating checkout session for tier:', tier)
 
