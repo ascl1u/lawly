@@ -1,5 +1,5 @@
 import Stripe from 'stripe'
-import { STRIPE_PRICE_IDS } from './constants'
+import { STRIPE_PRICE_IDS } from '@/config/stripe'
 
 // Re-export for convenience
 export { STRIPE_PRICE_IDS }

@@ -2,7 +2,7 @@ import { stripe } from './server'
 import { redis, REDIS_KEYS, StripeSubscriptionCache } from '../redis/client'
 import { createAdminClient } from '../supabase/admin'
 import type { Stripe } from 'stripe'
-import { STRIPE_PRICE_IDS } from './server'
+import { getPlanFromPriceId } from '@/config/stripe'
 
 /**
  * Syncs all Stripe data for a customer to Redis KV store
@@ -41,7 +41,7 @@ export async function syncStripeDataToKV(customerId: string): Promise<StripeSubs
     
     // Determine tier and analysis limit based on price ID
     const priceId = subscription.items.data[0]?.price.id
-    const tier = priceId === STRIPE_PRICE_IDS.PRO ? 'pro' : 'free'
+    const tier = getPlanFromPriceId(priceId)
     const analysisLimit = tier === 'pro' ? 30 : 1
 
     // Store complete subscription state

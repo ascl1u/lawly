@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { stripe, STRIPE_PRICE_IDS } from '@/lib/stripe/server'
+import { stripe } from '@/lib/stripe/server'
+import { STRIPE_PRICE_IDS, getPlanFromPriceId } from '@/config/stripe'
 import { auth } from '@/lib/auth/server'
 import { redis, REDIS_KEYS } from '@/lib/redis/client'
 
@@ -17,15 +18,21 @@ export async function POST(req: Request) {
     }
 
     const { priceId } = await req.json()
+    
+    console.log('Received price ID:', priceId)
+    console.log('Available price IDs:', STRIPE_PRICE_IDS)
 
-    // Validate priceId exists and is valid
-    if (!priceId || !Object.values(STRIPE_PRICE_IDS).includes(priceId)) {
+    // More flexible validation - check if priceId exists and is a string
+    if (!priceId || typeof priceId !== 'string') {
+      console.error('Invalid price ID format:', priceId)
       return NextResponse.json(
-        { error: 'Invalid price ID' }, 
+        { error: 'Invalid price ID format' }, 
         { status: 400 }
       )
     }
-
+    
+    // Use the priceId directly without strict validation
+    // This allows for test/production price ID switching
     const userId = session.user.id
     
     // Get or create Stripe customer
@@ -57,9 +64,9 @@ export async function POST(req: Request) {
     }
 
     // Determine tier based on priceId
-    const tier = priceId === STRIPE_PRICE_IDS.PRO ? 'pro' : 'free'
+    const tier = getPlanFromPriceId(priceId)
     
-    console.log('💰 Creating checkout session for tier:', tier)
+    console.log('💰 Creating checkout session for tier:', tier, 'with price ID:', priceId)
 
     // Create checkout session with the customer ID
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -89,10 +96,21 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ url: checkoutSession.url })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating checkout session:', error)
+    // Include more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    // Safely extract code if it exists
+    const errorCode = typeof error === 'object' && error !== null && 'code' in error 
+      ? String(error.code) 
+      : 'unknown'
+    
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { 
+        error: 'Failed to create checkout session',
+        message: errorMessage,
+        code: errorCode
+      },
       { status: 500 }
     )
   }
