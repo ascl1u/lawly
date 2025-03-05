@@ -48,7 +48,7 @@ export function DocumentActions({ onDelete, status, onAnalyze }: DocumentActions
           className="h-8 w-8 p-0"
           onClick={(e) => e.stopPropagation()}
         >
-          <MoreVertical className="h-4 w-4" />
+          <MoreVertical className="h-4 w-4 text-primary-foreground" />
           <span className="sr-only">Open menu</span>
         </Button>
       </DropdownMenuTrigger>
